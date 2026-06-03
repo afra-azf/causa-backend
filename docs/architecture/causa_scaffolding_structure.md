@@ -278,8 +278,6 @@ core/
         └── NotificationChannel.java
 ```
 
-```
-
 </details>
 
 ---
