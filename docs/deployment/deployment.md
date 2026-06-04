@@ -37,7 +37,7 @@ kubernetes/
 - Access to a Kubernetes cluster
 
 ### For Kind
-- [kind](https://kind.sigs.k8s.io/) installed
+- [kind](https://kind.sigs.kubernetes.io/) installed
 - NGINX Ingress Controller
 
 ### For OpenShift
@@ -53,7 +53,7 @@ kubernetes/
 # Create cluster with ingress support
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
+apiVersion: kind.x-kubernetes.io/v1alpha4
 name: causa-dev
 nodes:
 - role: control-plane
@@ -85,7 +85,7 @@ kubectl wait --namespace ingress-nginx \
 #### Deploy Causa
 ```bash
 # From repository root
-kubectl apply -k k8s/overlays/kind
+kubectl apply -k deployment/kubernetes/overlays/kind
 
 # Verify deployment
 kubectl get all -n diagnostics-tool
@@ -118,7 +118,7 @@ oc login --server=https://api.your-cluster.com:6443
 #### Deploy Causa
 ```bash
 # From repository root
-oc apply -k k8s/overlays/openshift
+oc apply -k deployment/kubernetes/overlays/openshift
 
 # Verify deployment
 oc get all -n diagnostics-tool
@@ -147,7 +147,7 @@ All configuration is managed via ConfigMaps and can be customized per environmen
 
 ### Base Configuration (all environments)
 
-Edit `k8s/base/configmap.yaml`:
+Edit `kubernetes/base/configmap.yaml`:
 ```yaml
 data:
   CAUSA_PORT: "8080"
@@ -156,7 +156,7 @@ data:
 
 ### Kind-Specific Configuration
 
-Edit `k8s/overlays/kind/configmap-patch.yaml`:
+Edit `kubernetes/overlays/kind/configmap-patch.yaml`:
 ```yaml
 data:
   CAUSA_LOG_LEVEL: "DEBUG"  # More verbose for local dev
@@ -165,7 +165,7 @@ data:
 
 ### OpenShift-Specific Configuration
 
-Edit `k8s/overlays/openshift/configmap-patch.yaml`:
+Edit `kubernetes/overlays/openshift/configmap-patch.yaml`:
 ```yaml
 data:
   CAUSA_LOG_LEVEL: "INFO"
@@ -186,7 +186,7 @@ data:
 ### Change Image Tag
 
 #### For Kind
-Edit `k8s/overlays/kind/kustomization.yaml`:
+Edit `kubernetes/overlays/kind/kustomization.yaml`:
 ```yaml
 images:
   - name: quay.io/rh-ee-shesaxen/causa-backend
@@ -194,7 +194,7 @@ images:
 ```
 
 #### For OpenShift
-Edit `k8s/overlays/openshift/kustomization.yaml`:
+Edit `kubernetes/overlays/openshift/kustomization.yaml`:
 ```yaml
 images:
   - name: quay.io/rh-ee-shesaxen/causa-backend
@@ -204,7 +204,7 @@ images:
 ### Change Replica Count
 
 #### For Kind
-Edit `k8s/overlays/kind/kustomization.yaml`:
+Edit `kubernetes/overlays/kind/kustomization.yaml`:
 ```yaml
 replicas:
   - name: causa-backend
@@ -212,7 +212,7 @@ replicas:
 ```
 
 #### For OpenShift
-Edit `k8s/overlays/openshift/kustomization.yaml`:
+Edit `kubernetes/overlays/openshift/kustomization.yaml`:
 ```yaml
 replicas:
   - name: causa-backend
@@ -222,12 +222,12 @@ replicas:
 ### Resource Limits
 
 #### For Kind
-Uses base resources (defined in `k8s/base/deployment.yaml`):
+Uses base resources (defined in `kubernetes/base/deployment.yaml`):
 - Requests: 100m CPU, 256Mi memory
 - Limits: 500m CPU, 512Mi memory
 
 #### For OpenShift
-Override in `k8s/overlays/openshift/deployment-patch.yaml`:
+Override in `kubernetes/overlays/openshift/deployment-patch.yaml`:
 - Requests: 200m CPU, 512Mi memory
 - Limits: 1000m CPU, 1Gi memory
 
@@ -273,7 +273,7 @@ annotations:
 ### Kind
 ```bash
 # Delete Causa
-kubectl delete -k k8s/overlays/kind
+kubectl delete -k deployment/kubernetes/overlays/kind
 
 # Delete entire cluster
 kind delete cluster --name causa-dev
@@ -282,7 +282,7 @@ kind delete cluster --name causa-dev
 ### OpenShift
 ```bash
 # Delete Causa
-oc delete -k k8s/overlays/openshift
+oc delete -k deployment/kubernetes/overlays/openshift
 
 # Or delete namespace (removes everything)
 oc delete namespace diagnostics-tool
@@ -294,12 +294,12 @@ oc delete namespace diagnostics-tool
 
 #### Kind
 ```bash
-kubectl kustomize k8s/overlays/kind
+kubectl kustomize deployment/kubernetes/overlays/kind
 ```
 
 #### OpenShift
 ```bash
-oc kustomize k8s/overlays/openshift
+oc kustomize deployment/kubernetes/overlays/openshift
 ```
 
 ## Security
