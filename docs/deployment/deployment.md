@@ -5,7 +5,7 @@ This directory contains Kubernetes manifests for deploying Causa Backend using K
 ## Directory Structure
 
 ```
-kubernetes/
+deployment/kubernetes/
 ├── base/                    # Base Kubernetes resources
 │   ├── deployment.yaml      # Main application deployment
 │   ├── service.yaml         # ClusterIP service
@@ -14,19 +14,17 @@ kubernetes/
 │   ├── namespace.yaml       # Base namespace
 │   └── kustomization.yaml   # Base kustomization
 │
-├── overlays/
-│   ├── kind/                # Kind (local) environment
-│   │   ├── configmap-patch.yaml
-│   │   ├── ingress.yaml     # NGINX Ingress
-│   │   └── kustomization.yaml
-│   │
-│   └── openshift/           # OpenShift environment
-│       ├── configmap-patch.yaml
-│       ├── deployment-patch.yaml  # Security contexts
-│       ├── route.yaml       # OpenShift Route
-│       └── kustomization.yaml
-│
-└── README.md
+└── overlays/
+    ├── kind/                # Kind (local) environment
+    │   ├── configmap-patch.yaml
+    │   ├── ingress.yaml     # NGINX Ingress
+    │   └── kustomization.yaml
+    │
+    └── openshift/           # OpenShift environment
+        ├── configmap-patch.yaml
+        ├── deployment-patch.yaml  # Security contexts
+        ├── route.yaml       # OpenShift Route
+        └── kustomization.yaml
 ```
 
 ## Prerequisites
@@ -147,7 +145,7 @@ All configuration is managed via ConfigMaps and can be customized per environmen
 
 ### Base Configuration (all environments)
 
-Edit `kubernetes/base/configmap.yaml`:
+Edit `deployment/kubernetes/base/configmap.yaml`:
 ```yaml
 data:
   CAUSA_PORT: "8080"
@@ -156,7 +154,7 @@ data:
 
 ### Kind-Specific Configuration
 
-Edit `kubernetes/overlays/kind/configmap-patch.yaml`:
+Edit `deployment/kubernetes/overlays/kind/configmap-patch.yaml`:
 ```yaml
 data:
   CAUSA_LOG_LEVEL: "DEBUG"  # More verbose for local dev
@@ -165,7 +163,7 @@ data:
 
 ### OpenShift-Specific Configuration
 
-Edit `kubernetes/overlays/openshift/configmap-patch.yaml`:
+Edit `deployment/kubernetes/overlays/openshift/configmap-patch.yaml`:
 ```yaml
 data:
   CAUSA_LOG_LEVEL: "INFO"
@@ -186,7 +184,7 @@ data:
 ### Change Image Tag
 
 #### For Kind
-Edit `kubernetes/overlays/kind/kustomization.yaml`:
+Edit `deployment/kubernetes/overlays/kind/kustomization.yaml`:
 ```yaml
 images:
   - name: quay.io/rh-ee-shesaxen/causa-backend
@@ -194,7 +192,7 @@ images:
 ```
 
 #### For OpenShift
-Edit `kubernetes/overlays/openshift/kustomization.yaml`:
+Edit `deployment/kubernetes/overlays/openshift/kustomization.yaml`:
 ```yaml
 images:
   - name: quay.io/rh-ee-shesaxen/causa-backend
@@ -204,7 +202,7 @@ images:
 ### Change Replica Count
 
 #### For Kind
-Edit `kubernetes/overlays/kind/kustomization.yaml`:
+Edit `deployment/kubernetes/overlays/kind/kustomization.yaml`:
 ```yaml
 replicas:
   - name: causa-backend
@@ -212,7 +210,7 @@ replicas:
 ```
 
 #### For OpenShift
-Edit `kubernetes/overlays/openshift/kustomization.yaml`:
+Edit `deployment/kubernetes/overlays/openshift/kustomization.yaml`:
 ```yaml
 replicas:
   - name: causa-backend
@@ -222,12 +220,12 @@ replicas:
 ### Resource Limits
 
 #### For Kind
-Uses base resources (defined in `kubernetes/base/deployment.yaml`):
+Uses base resources (defined in `deployment/kubernetes/base/deployment.yaml`):
 - Requests: 100m CPU, 256Mi memory
 - Limits: 500m CPU, 512Mi memory
 
 #### For OpenShift
-Override in `kubernetes/overlays/openshift/deployment-patch.yaml`:
+Override in `deployment/kubernetes/overlays/openshift/deployment-patch.yaml`:
 - Requests: 200m CPU, 512Mi memory
 - Limits: 1000m CPU, 1Gi memory
 

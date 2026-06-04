@@ -283,7 +283,7 @@ causa-backend/
 
 5. **Submit Pull Request**
    - Push branch to remote
-   - Create PR with description againist main
+   - Create PR with description against main
    - Add your custom quay image for faster testing and reviews
    - Wait for code review
 

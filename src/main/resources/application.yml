@@ -35,7 +35,8 @@ quarkus:
       format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n"
       color: true
     category:
-      "com.causa": ${CAUSA_APP_LOG_LEVEL:INFO}
+      "com.causa":
+        level: ${CAUSA_APP_LOG_LEVEL:INFO}
 
   # Banner
   banner:
