@@ -1,0 +1,77 @@
+# Causa Backend - Application Configuration
+# All properties support runtime ENV variable overrides
+
+# Application Metadata
+quarkus:
+  application:
+    name: ${CAUSA_APP_NAME:causa-backend}
+    version: 0.0.1
+
+  # HTTP Server Configuration 
+  http:
+    port: ${CAUSA_PORT:8080}
+    host: ${CAUSA_HOST:0.0.0.0}
+    cors:
+      ~: true
+      origins: ${CAUSA_CORS_ORIGINS:*}
+      methods: ${CAUSA_CORS_METHODS:GET,POST,PUT,DELETE,OPTIONS}
+      headers: ${CAUSA_CORS_HEADERS:*}
+
+  # OpenAPI/Swagger Configuration 
+  smallrye-openapi:
+    info-title: Causa Backend API
+    info-version: 0.0.1
+
+  # Swagger UI Configuration 
+  swagger-ui:
+    always-include: false
+    path: ${CAUSA_SWAGGER_UI_PATH:/swagger-ui}
+
+  # Logging Configuration
+  log:
+    level: ${CAUSA_LOG_LEVEL:INFO}
+    console:
+      enable: true
+      format: "%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n"
+      color: true
+    category:
+      "com.causa":
+        level: ${CAUSA_APP_LOG_LEVEL:INFO}
+
+  # Banner
+  banner:
+    enabled: true
+    path: banner.txt
+
+
+# Custom Application Configuration (TO BE ADDED LATER)
+# causa:
+#   # Feature Flags (Runtime configurable)
+#   features:
+#     rag-enabled: ${CAUSA_FEATURE_RAG:false}
+#     validation-enabled: ${CAUSA_FEATURE_VALIDATION:true}
+#     notifications-enabled: ${CAUSA_FEATURE_NOTIFICATIONS:false}
+
+#   # LLM Configuration
+#   llm:
+#     provider: ${CAUSA_LLM_PROVIDER:claude}
+#     model-name: ${CAUSA_LLM_MODEL:claude-3-5-sonnet}
+#     temperature: ${CAUSA_LLM_TEMPERATURE:0.1}
+#     max-tokens: ${CAUSA_LLM_MAX_TOKENS:2048}
+#     timeout-seconds: ${CAUSA_LLM_TIMEOUT:60}
+
+#   # MCP Configuration
+#   mcp:
+#     kubernetes:
+#       endpoint: ${CAUSA_MCP_K8S_ENDPOINT:http://k8s-mcp.causa.svc.cluster.local:8080}
+#       timeout-ms: ${CAUSA_MCP_K8S_TIMEOUT:5000}
+#     cryostat:
+#       endpoint: ${CAUSA_MCP_CRYOSTAT_ENDPOINT:http://cryostat-mcp.causa.svc:8181}
+#     kruize:
+#       endpoint: ${CAUSA_MCP_KRUIZE_ENDPOINT:http://kruize.monitoring.svc:8080}
+
+#   # Alert Configuration
+#   alerts:
+#     filter-severity: ${CAUSA_ALERT_SEVERITY:critical}
+#     cooldown-minutes: ${CAUSA_ALERT_COOLDOWN:15}
+#     ignore-namespaces: ${CAUSA_ALERT_IGNORE_NS:kube-system,istio-system}

@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: causa-backend-kind
+  annotations:
+    config.kubernetes.io/description: "Kind overlay for Causa Backend"
+
+# Override base namespace
+namespace: diagnostics-tool
+
+namePrefix: kind-
+
+commonLabels:
+  environment: kind
+  cluster: kind-cluster
+
+bases:
+  - ../../base
+
+resources:
+  - ingress.yaml
+
+patches:
+  - path: configmap-patch.yaml
+
+images:
+  - name: quay.io/rh-ee-shesaxen/causa-backend
+    newName: quay.io/rh-ee-shesaxen/causa-backend
+    newTag: shekhar_t1
+
+replicas:
+  - name: causa-backend
+    count: 1

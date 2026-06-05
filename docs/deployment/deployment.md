@@ -1,0 +1,314 @@
+# Kubernetes Deployment Guide
+
+This directory contains Kubernetes manifests for deploying Causa Backend using Kustomize.
+
+## Directory Structure
+
+```
+deployment/kubernetes/
+├── base/                    # Base Kubernetes resources
+│   ├── deployment.yaml      # Main application deployment
+│   ├── service.yaml         # ClusterIP service
+│   ├── configmap.yaml       # Configuration
+│   ├── serviceaccount.yaml  # Service account
+│   ├── namespace.yaml       # Base namespace
+│   └── kustomization.yaml   # Base kustomization
+│
+└── overlays/
+    ├── kind/                # Kind (local) environment
+    │   ├── configmap-patch.yaml
+    │   ├── ingress.yaml     # NGINX Ingress
+    │   └── kustomization.yaml
+    │
+    └── openshift/           # OpenShift environment
+        ├── configmap-patch.yaml
+        ├── deployment-patch.yaml  # Security contexts
+        ├── route.yaml       # OpenShift Route
+        └── kustomization.yaml
+```
+
+## Prerequisites
+
+### For All Deployments
+- `kubectl` CLI installed
+- `kustomize` installed (or kubectl 1.14+)
+- Access to a Kubernetes cluster
+
+### For Kind
+- [kind](https://kind.sigs.kubernetes.io/) installed
+- NGINX Ingress Controller
+
+### For OpenShift
+- `oc` CLI installed
+- Access to an OpenShift cluster
+
+## Quick Start
+
+### 1. Deploy to Kind (Local Development)
+
+#### Create Kind Cluster (if needed)
+```bash
+# Create cluster with ingress support
+cat <<EOF | kind create cluster --config=-
+kind: Cluster
+apiVersion: kind.x-kubernetes.io/v1alpha4
+name: causa-dev
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+EOF
+
+# Install NGINX Ingress
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+
+# Wait for ingress to be ready
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=90s
+```
+
+#### Deploy Causa
+```bash
+# From repository root
+kubectl apply -k deployment/kubernetes/overlays/kind
+
+# Verify deployment
+kubectl get all -n diagnostics-tool
+
+# Check logs
+kubectl logs -n diagnostics-tool -l app.kubernetes.io/name=causa-backend -f
+```
+
+#### Access Application
+```bash
+# Add to /etc/hosts
+echo "127.0.0.1 causa.local" | sudo tee -a /etc/hosts
+
+# Access endpoints
+curl http://causa.local/q/health/live
+curl http://causa.local/q/health/ready
+curl http://causa.local/swagger-ui
+
+# Or use localhost
+curl http://localhost/q/health/live
+```
+
+### 2. Deploy to OpenShift
+
+#### Login to OpenShift
+```bash
+oc login --server=https://api.your-cluster.com:6443
+```
+
+#### Deploy Causa
+```bash
+# From repository root
+oc apply -k deployment/kubernetes/overlays/openshift
+
+# Verify deployment
+oc get all -n diagnostics-tool
+
+# Check logs
+oc logs -n diagnostics-tool -l app.kubernetes.io/name=causa-backend -f
+
+# Get route URL
+oc get route -n diagnostics-tool ocp-causa-backend -o jsonpath='{.spec.host}'
+```
+
+#### Access Application
+```bash
+# Get the route
+ROUTE_URL=$(oc get route -n diagnostics-tool ocp-causa-backend -o jsonpath='{.spec.host}')
+
+# Access endpoints (HTTPS)
+curl https://$ROUTE_URL/q/health/live
+curl https://$ROUTE_URL/q/health/ready
+curl https://$ROUTE_URL/swagger-ui
+```
+
+## Configuration
+
+All configuration is managed via ConfigMaps and can be customized per environment.
+
+### Base Configuration (all environments)
+
+Edit `deployment/kubernetes/base/configmap.yaml`:
+```yaml
+data:
+  CAUSA_PORT: "8080"
+  CAUSA_LOG_LEVEL: "INFO"
+```
+
+### Kind-Specific Configuration
+
+Edit `deployment/kubernetes/overlays/kind/configmap-patch.yaml`:
+```yaml
+data:
+  CAUSA_LOG_LEVEL: "DEBUG"  # More verbose for local dev
+  CLUSTER_TYPE: "kind"
+```
+
+### OpenShift-Specific Configuration
+
+Edit `deployment/kubernetes/overlays/openshift/configmap-patch.yaml`:
+```yaml
+data:
+  CAUSA_LOG_LEVEL: "INFO"
+  CLUSTER_TYPE: "openshift"
+```
+
+## Environment Variables
+
+| Variable | Description | Default | Kind | OpenShift |
+|----------|-------------|---------|------|-----------|
+| `CAUSA_PORT` | HTTP port | `8080` | `8080` | `8080` |
+| `CAUSA_LOG_LEVEL` | Log level | `INFO` | `DEBUG` | `INFO` |
+| `CAUSA_SWAGGER_UI_PATH` | Swagger UI path | `/swagger-ui` | `/swagger-ui` | `/swagger-ui` |
+| `CLUSTER_TYPE` | Cluster type | - | `kind` | `openshift` |
+
+## Customization
+
+### Change Image Tag
+
+#### For Kind
+Edit `deployment/kubernetes/overlays/kind/kustomization.yaml`:
+```yaml
+images:
+  - name: quay.io/rh-ee-shesaxen/causa-backend
+    newTag: v1.0.0  # Change this
+```
+
+#### For OpenShift
+Edit `deployment/kubernetes/overlays/openshift/kustomization.yaml`:
+```yaml
+images:
+  - name: quay.io/rh-ee-shesaxen/causa-backend
+    newTag: v1.0.0  # Change this
+```
+
+### Change Replica Count
+
+#### For Kind
+Edit `deployment/kubernetes/overlays/kind/kustomization.yaml`:
+```yaml
+replicas:
+  - name: causa-backend
+    count: 2  # Change this
+```
+
+#### For OpenShift
+Edit `deployment/kubernetes/overlays/openshift/kustomization.yaml`:
+```yaml
+replicas:
+  - name: causa-backend
+    count: 3  # Change this
+```
+
+### Resource Limits
+
+#### For Kind
+Uses base resources (defined in `deployment/kubernetes/base/deployment.yaml`):
+- Requests: 100m CPU, 256Mi memory
+- Limits: 500m CPU, 512Mi memory
+
+#### For OpenShift
+Override in `deployment/kubernetes/overlays/openshift/deployment-patch.yaml`:
+- Requests: 200m CPU, 512Mi memory
+- Limits: 1000m CPU, 1Gi memory
+
+## Health Checks
+
+The deployment includes three types of health probes:
+
+### Liveness Probe
+- **Path**: `/q/health/live`
+- **Purpose**: Determines if pod should be restarted
+- **Initial Delay**: 30s
+- **Period**: 10s
+
+### Readiness Probe
+- **Path**: `/q/health/ready`
+- **Purpose**: Determines if pod should receive traffic
+- **Initial Delay**: 30s
+- **Period**: 5s
+
+### Startup Probe
+- **Path**: `/q/health/started`
+- **Purpose**: Determines if application has started
+- **Initial Delay**: 5s
+- **Period**: 5s
+- **Failure Threshold**: 30 (max 150s startup time)
+
+## Monitoring
+
+### Prometheus Metrics
+
+Metrics are exposed at `/q/metrics` on port 8080.
+
+Pods are annotated for Prometheus auto-discovery:
+```yaml
+annotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/q/metrics"
+```
+
+## Cleanup
+
+### Kind
+```bash
+# Delete Causa
+kubectl delete -k deployment/kubernetes/overlays/kind
+
+# Delete entire cluster
+kind delete cluster --name causa-dev
+```
+
+### OpenShift
+```bash
+# Delete Causa
+oc delete -k deployment/kubernetes/overlays/openshift
+
+# Or delete namespace (removes everything)
+oc delete namespace diagnostics-tool
+```
+
+## Advanced Usage
+
+### Dry Run (Preview Changes)
+
+#### Kind
+```bash
+kubectl kustomize deployment/kubernetes/overlays/kind
+```
+
+#### OpenShift
+```bash
+oc kustomize deployment/kubernetes/overlays/openshift
+```
+
+## Security
+
+### Kind
+- Uses default Kubernetes security context
+- No specific security constraints
+
+### OpenShift
+- Uses `restricted` SCC (Security Context Constraint)
+- `runAsNonRoot: true`
+- Drops all capabilities
+- `allowPrivilegeEscalation: false`
+- TLS termination at Route level

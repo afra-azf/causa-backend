@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: causa-backend
+  labels:
+    app.kubernetes.io/name: causa-backend
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: causa-backend
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: causa-backend
+        app.kubernetes.io/component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/q/metrics"
+    spec:
+      serviceAccountName: causa-backend
+      containers:
+      - name: causa-backend
+        image: quay.io/rh-ee-shesaxen/causa-backend:shekhar_t1
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: management
+          containerPort: 9000
+          protocol: TCP
+        env:
+        - name: CAUSA_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: causa-config
+              key: CAUSA_PORT
+        - name: CAUSA_LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: causa-config
+              key: CAUSA_LOG_LEVEL
+        - name: CAUSA_SWAGGER_UI_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: causa-config
+              key: CAUSA_SWAGGER_UI_PATH
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /q/health/live
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: config
+          mountPath: /deployments/config
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: causa-config
