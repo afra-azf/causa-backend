@@ -48,4 +48,40 @@ public final class ApiConstants {
         public static final String READINESS_UP_MESSAGE = "Causa is ready to accept requests";
         public static final String READINESS_DOWN_MESSAGE = "Causa is not ready to accept requests";
     }
+
+    /**
+     * API version constants.
+     */
+    public static final class Version {
+        private Version() {}
+
+        public static final String API_V1 = "/api/v1";
+    }
+
+    /**
+     * API endpoint paths organized by resource.
+     */
+    public static final class Paths {
+        private Paths() {}
+
+        /**
+         * Webhook endpoints for external system integrations.
+         */
+        public static final class Webhooks {
+            private Webhooks() {}
+
+            public static final String ALERTS = Version.API_V1 + "/webhooks/alerts";
+        }
+
+        /**
+         * Health check paths.
+         */
+        public static final class Health {
+            private Health() {}
+
+            public static final String LIVENESS = "/q/health/live";
+            public static final String READINESS = "/q/health/ready";
+        }
+    }
+
 }
