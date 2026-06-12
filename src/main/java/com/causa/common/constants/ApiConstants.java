@@ -84,4 +84,38 @@ public final class ApiConstants {
         }
     }
 
+     /* API endpoint paths.
+     */
+    public static final class Endpoints {
+        private Endpoints() {}
+
+        public static final String HEALTH = "/api/health";
+    }
+
+    /**
+     * Health check response field keys.
+     */
+    public static final class HealthCheckResponse {
+        private HealthCheckResponse() {}
+
+        public static final String TIMESTAMP_KEY = "timestamp";
+        public static final String VERSION_KEY = "version";
+        public static final String COMPONENTS_KEY = "components";
+        public static final String LATENCY_MS_KEY = "latency_ms";
+    }
+
+    /**
+     * Structured logging field names.
+     */
+    public static final class LogFields {
+        private LogFields() {}
+
+        public static final String COMPONENT = "component";
+        public static final String STATUS = "status";
+        public static final String LATENCY_MS = "latency_ms";
+        public static final String ERROR = "error";
+        public static final String ENDPOINT = "endpoint";
+        public static final String HTTP_STATUS = "http_status";
+    }
+
 }
