@@ -113,4 +113,13 @@ causa:
 #     validation-enabled: ${CAUSA_FEATURE_VALIDATION:true}
 #     notifications-enabled: ${CAUSA_FEATURE_NOTIFICATIONS:false}
 
+# ============================================================
+# Development Profile Configuration
+# ============================================================
+"%dev":
+  quarkus:
+    datasource:
+      # Dev-only password default to avoid build-time DataSource bean creation failure
+      # Production uses Kubernetes secrets via CAUSA_DB_PASSWORD env var
+      password: ${CAUSA_DB_PASSWORD:dev_password}
 
