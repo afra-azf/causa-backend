@@ -14,6 +14,23 @@ public final class DiagnosticConstants {
     }
 
     /**
+     * Logging field names for diagnostics.
+     */
+    public static final class Fields {
+        private Fields() {}
+
+        public static final String DIAGNOSTIC_ID = "diagnosticId";
+    }
+
+    // Logging format constants
+    public static final int SEPARATOR_LENGTH = 80;
+    public static final String SEPARATOR_CHAR = "=";
+    public static final String CONTEXT_HEADER = "COLLECTED DIAGNOSTIC CONTEXT (LLM-Ready)";
+    public static final String NEWLINE = "\n";
+
+
+
+    /**
      * Diagnostic Status
      *
      * <p>Defines the lifecycle status of a diagnostic analysis.
