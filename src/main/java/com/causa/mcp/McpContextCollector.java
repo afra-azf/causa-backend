@@ -1,5 +1,12 @@
 package com.causa.mcp;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.UUID;
+
 import com.causa.common.constants.McpConstants;
 import com.causa.common.logging.CausaLogger;
 import com.causa.common.logging.LogMessages;
@@ -10,15 +17,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.UUID;
 
 /**
  * MCP Context Collector
@@ -116,6 +117,8 @@ public class McpContextCollector {
 
         return context;
     }
+
+
 
     /**
      * Calls Kubernetes MCP pods_get tool to retrieve pod status.

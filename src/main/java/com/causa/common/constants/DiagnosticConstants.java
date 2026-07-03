@@ -14,6 +14,14 @@ public final class DiagnosticConstants {
     }
 
     /**
+     * Field name constants for structured logging
+     */
+    public static final String FIELD_ALERT_ID = "alertId";
+    public static final String FIELD_DIAGNOSTIC_ID = "diagnosticId";
+    public static final String FIELD_STATUS = "status";
+    public static final String FIELD_SYSTEM_PROMPT_LENGTH = "systemPromptLength";
+    public static final String FIELD_USER_PROMPT_LENGTH = "userPromptLength";
+    public static final String FIELD_CONTEXT_LENGTH = "contextLength";
      * Logging field names for diagnostics.
      */
     public static final class Fields {

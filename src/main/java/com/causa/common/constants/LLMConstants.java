@@ -52,6 +52,29 @@ public final class LLMConstants {
     }
 
     /**
+     * Model name identifiers for detection.
+     */
+    public static final class ModelNames {
+        private ModelNames() {}
+
+        // IBM BOB models
+        public static final String BOB = "bob";
+        public static final String GRANITE = "granite";
+
+        // Claude models (Anthropic)
+        public static final String CLAUDE_OPUS_4 = "claude-opus-4";
+        public static final String CLAUDE_SONNET_4_6 = "claude-sonnet-4-6";
+        public static final String CLAUDE_SONNET_4 = "claude-sonnet-4";
+        public static final String CLAUDE_HAIKU_4 = "claude-haiku-4";
+
+        // Legacy Claude models
+        public static final String CLAUDE_3_5_SONNET = "claude-3-5-sonnet-20241022";
+        public static final String CLAUDE_3_OPUS = "claude-3-opus-20240229";
+        public static final String CLAUDE_3_SONNET = "claude-3-sonnet-20240229";
+        public static final String CLAUDE_3_HAIKU = "claude-3-haiku-20240307";
+    }
+
+    /**
      * BOB Shell specific constants.
      */
     public static final class BobShell {
