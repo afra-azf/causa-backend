@@ -21,7 +21,6 @@ import jakarta.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * LangChain Prompt Sender
@@ -44,7 +43,6 @@ public class LangChainPromptSender implements PromptSender {
 
     private final ChatModel chatModel;
     private final LLMConfig config;
-    private final AtomicBoolean ready = new AtomicBoolean(false);
 
     @Inject
     public LangChainPromptSender(ChatModel chatModel, LLMConfig config) {
@@ -56,7 +54,7 @@ public class LangChainPromptSender implements PromptSender {
     public LLMResponse send(LLMRequest request) {
         if (!isReady()) {
             log.error(LogMessages.LLM.MODEL_NOT_AVAILABLE)
-                .field(LLMConstants.Fields.PROVIDER, config.provider())
+                .field(LLMConstants.Fields.PROVIDER, config.provider().orElse("(not configured)"))
                 .log();
             throw new LLMException(
                 LLMConstants.ErrorMessages.MODEL_NOT_AVAILABLE,
@@ -65,7 +63,7 @@ public class LangChainPromptSender implements PromptSender {
         }
 
         log.info(LogMessages.LLM.PROMPT_SEND_START)
-            .field(LLMConstants.Fields.PROVIDER, config.provider())
+            .field(LLMConstants.Fields.PROVIDER, config.provider().orElse("(not configured)"))
             .field(LLMConstants.Fields.MODEL, resolveModel(request))
             .log();
 
@@ -137,14 +135,7 @@ public class LangChainPromptSender implements PromptSender {
 
     @Override
     public boolean isReady() {
-        return ready.get();
-    }
-
-    /**
-     * Marks the prompt sender as ready. Called by LLMStartup after successful connectivity check.
-     */
-    void setReady(boolean ready) {
-        this.ready.set(ready);
+        return chatModel != null && config.modelName().filter(m -> !m.isBlank()).isPresent();
     }
 
     /**
@@ -221,6 +212,6 @@ public class LangChainPromptSender implements PromptSender {
      * @return the model name
      */
     private String resolveModel(LLMRequest request) {
-        return request.modelOverride().orElse(config.modelName());
+        return request.modelOverride().orElse(config.modelName().orElse(""));
     }
 }
