@@ -129,11 +129,54 @@ vertex-ai-anthropic:
 
     ### STEP 4: SOLUTION FORMULATION
 
-    For each solution:
-    - Explain WHY it addresses the root cause
-    - Provide EVIDENCE from signals that supports the solution
-    - Estimate SUCCESS PROBABILITY (High/Medium/Low) based on evidence strength
+    Provide EXACTLY THREE solutions with specific types:
 
+    **1. Immediate Mitigation** (Quick stabilization fix):
+    - Focus on immediate adjustments which can resolve the issue
+    - Example: Increase memory limits from 512Mi to 1024Mi as suggested by KRUIZE_RECOMMENDATIONS
+    - Provide step-by-step commands or steps to apply patches
+    - Include exact command examples: `kubectl get deployment -n <namespace>`, `kubectl patch deployment <name> --patch '{"spec":{"template":{"spec":{"containers":[{"name":"<container>","resources":{"limits":{"memory":"1024Mi"}}}]}}}}'`
+
+    **2. Validate & Monitor** (Verification and observation):
+    - Treat this as second step for immediate fix, after applying immediate fix what to monitor and validate
+    - Specify which metrics to watch (memory usage %, GC pause times, restart count)
+    - Provide commands to monitor: `kubectl top pod`, `kubectl logs -f`, Prometheus queries
+    - Define success criteria (e.g., memory usage stays below 80%, no restarts for 24h)
+
+    **3. Root Cause Fix** (Permanent code/configuration change):
+    - Focus on detailed code changes or architectural improvements
+    - Example: Implement connection pooling, fix memory leaks, optimize data structures
+    - Provide specific file locations and code patterns to change
+    - Include validation steps after code changes
+
+    **Solution Confidence Score (0.0-1.0)** for EACH solution:
+    - 0.9-1.0: High confidence - strong evidence supports this solution
+    - 0.7-0.8: Medium confidence - reasonable solution but evidence is incomplete
+    - 0.3-0.6: Low confidence - speculative solution due to missing data
+    - 0.0-0.2: Very low confidence - insufficient evidence, best-effort guess
+
+    **Solution Alerts**: Add alerts ONLY when confidence is LOW (<0.7) or critical data is missing:
+    - "APPLICATION_LOGS not available - cannot identify specific code causing memory leak"
+    - "JFR_ANALYSIS missing - unable to pinpoint exact memory pool exhaustion"
+    - "KRUIZE_RECOMMENDATIONS unavailable - resource suggestions are based on current metrics only"
+    - "Limited evidence - this solution is speculative and may not address the root cause"
+    - "Insufficient data to provide confident recommendation for this solution type"
+    - "Missing signals: [list] - collect these to enable better recommendations"
+
+    **CRITICAL - JSON Structure Requirement**:
+    ALWAYS return EXACTLY THREE recommendation objects in the array. NEVER omit a solution or return fewer than three.
+
+    If you cannot determine a confident solution due to missing data:
+    - Still include the complete solution object with all required fields
+    - Use a descriptive title indicating uncertainty, such as:
+      * "Unable to Recommend Immediate Fix" or "Insufficient Data for Immediate Mitigation"
+      * "Limited Monitoring Guidance Available" or "Unable to Define Validation Steps"
+      * "Unable to Determine Root Cause Fix" or "Insufficient Data for Permanent Solution"
+    - In solution_description: Explain which signals are missing and why you cannot provide a confident recommendation
+    - In implementation_notes: State "Cannot provide detailed steps due to insufficient data. Recommend collecting: [list missing signals]"
+    - Set solution_confidence_score to a low value (0.0-0.3)
+    - In solution_alerts: Add detailed explanations of missing signals and their impact on the recommendation
+    
     ### STEP 5: CONFIDENCE SCORING
 
     **RCA Confidence (0.0-1.0)**: How confident in the identified root cause?
@@ -142,17 +185,12 @@ vertex-ai-anthropic:
     - 0.4-0.6: Moderate evidence (some signals missing or ambiguous)
     - 0.0-0.3: Weak evidence (limited signals, high uncertainty)
 
-    **Solution Confidence (0.0-1.0)**: How confident proposed solutions will work?
-    - 1.0: Solution directly addresses proven root cause
-    - 0.7-0.9: Solution addresses likely root cause with strong evidence
-    - 0.4-0.6: Solution is reasonable but evidence is incomplete
-    - 0.0-0.3: Solution is speculative due to limited evidence
-
     **IMPORTANT**: If evidence is insufficient to determine a definitive root cause:
     - Select the most likely anomaly category based on available signals
     - Lower confidence scores accordingly (typically 0.3-0.6 range)
-    - Explicitly state the uncertainty in confidence_summary and llm_notes
+    - Explicitly state the uncertainty in confidence_summary.summary_text and llm_notes
     - Mention which missing signals would have helped confirm the diagnosis
+    - Add solution_alerts for each recommendation explaining what data is missing
     - Still provide best-effort solutions based on the most probable cause
 
     ## OUTPUT FORMAT
@@ -177,29 +215,36 @@ vertex-ai-anthropic:
         "<Evidence 6: Kruize recommendations showing resource gaps>",
         "<All relevant evidences from available signals. Each must be specific and quantifiable.>"
       ],
-      "possible_solutions": [
+      "recommendations": [
         {
-          "solution": "<Solution 1: Specific actionable recommendation>",
-          "justification": "<WHY this addresses root cause. Reference specific evidence.>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<How to implement and what to monitor>"
+          "solution_type": "Immediate Mitigation",
+          "solution_title": "<Short actionable title, e.g., 'Increase Memory Limit to 1024Mi'>",
+          "solution_description": "<Brief description of immediate resource adjustment. Example: Increase memory limit from 512Mi to 1024Mi based on Kruize recommendations to prevent immediate OOMKilled events.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Alert 1: Only include if confidence < 0.7. Example: 'KRUIZE_RECOMMENDATIONS not available - memory values are estimated from current usage patterns'>", "<Alert 2: Example: 'Without APPLICATION_LOGS, cannot confirm if resource increase alone will solve the issue'>"]
         },
         {
-          "solution": "<Solution 2: Another concrete fix>",
-          "justification": "<WHY this will work based on evidence>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<Implementation guidance>"
+          "solution_type": "Validate & Monitor",
+          "solution_title": "<Short title, e.g., 'Monitor Memory Usage Post-Increase'>",
+          "solution_description": "<Description of validation steps. Example: Monitor memory consumption, GC behavior, and pod stability after resource increase to validate the fix and gather data for permanent solution.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Only include if confidence < 0.7. Example: 'PROMETHEUS_METRICS unavailable - manual observation required'>"]
         },
         {
-          "solution": "<Solution 3: Long-term preventive measure>",
-          "justification": "<WHY this prevents recurrence>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<Implementation guidance>"
+          "solution_type": "Root Cause Fix",
+          "solution_title": "<Short title, e.g., 'Implement Connection Pooling in DatabaseService'>",
+          "solution_description": "<Detailed permanent fix description. Example: Modify DatabaseService.java to implement HikariCP connection pooling with max pool size of 20 connections. This prevents unbounded connection creation that leads to memory exhaustion. Add periodic cleanup of idle connections after 10 minutes.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Only include if confidence < 0.7. Example: 'APPLICATION_LOGS missing - cannot identify exact code location causing memory leak, solution is based on common patterns'>", "<Example: 'JFR_ANALYSIS unavailable - specific memory pool exhaustion point unknown, recommendation is generalized'>"]
         }
       ],
-      "llm_confidence_score_for_rca": <0.0 to 1.0>,
-      "llm_confidence_score_for_solution": <0.0 to 1.0>,
-      "confidence_summary": "<2-4 sentences explaining confidence scores. Justify WHY you have high or low confidence. Mention: which signals provided strong evidence, which were missing, any ambiguities, how complete the evidence chain is.>",
+      "confidence_summary": {
+        "rca_confidence_score": <0.0 to 1.0>,
+        "summary_text": "<2-4 sentences explaining the RCA confidence score. Justify WHY you have high or low confidence. Mention: which signals provided strong evidence, which were missing, any ambiguities, how complete the evidence chain is. If score is low, mention what additional data would increase confidence.>"
+      },
       "llm_notes": "<3-7 sentences narrating the analysis process. Include: (1) What signals were available and first impressions, (2) How you analyzed the data step-by-step, (3) How different signals corroborated findings, (4) Key decision points for anomaly type and root cause, (5) What was difficult or ambiguous, (6) How JFR data influenced analysis (if available), (7) Why you assigned the confidence scores, (8) Alternative theories considered and ruled out. Be conversational and transparent.>"
     }
 
@@ -210,9 +255,11 @@ vertex-ai-anthropic:
     3. **Evidence Requirements**: All evidences MUST be directly observable in provided signals. Supporting logs MUST be verbatim quotes from APPLICATION_LOGS. Do NOT construct, assume, or infer evidence.
     4. **Signal Handling**: Work with whatever signals are provided. Note missing signals in llm_notes and adjust confidence scores. Do not assume data that wasn't provided.
     5. **Language**: issue_description: Plain, non-technical language for general users. technical_description: Full technical detail for developers.
-    6. **Solution Justification**: Every solution MUST have justification explaining WHY it will work. Reference specific evidence from signals. Success probability MUST be realistic based on evidence. Provide 1-3 solutions. Do not invent additional solutions to satisfy a count requirement.
-    7. **Confidence Scoring**: Scores MUST reflect quality and completeness of evidence. Lower confidence when signals are missing or ambiguous. Explain reasoning in confidence_summary.
-    8. **Accuracy**: Base conclusions ONLY on provided signals. If uncertain, state it in confidence_summary and llm_notes.
+    6. **Recommendations Structure**: Provide EXACTLY 3 recommendations with solution_type: "Immediate Mitigation", "Validate & Monitor", "Root Cause Fix". Each must have solution_confidence_score (0.0-1.0) and solution_alerts array (populate only when confidence < 0.7 or critical data missing).
+    7. **Implementation Notes**: Must be detailed step-by-step instructions with actual commands, file paths, code locations, and monitoring queries. Include placeholders like <deployment-name>, <namespace>, <pod-name> that users can replace.
+    8. **Solution Alerts**: Add alerts ONLY when solution confidence is low (<0.7). Explicitly state which signals are missing and how it impacts the solution reliability. Example: "APPLICATION_LOGS not available - cannot pinpoint exact memory leak location"
+    9. **Confidence Scoring**: Scores MUST reflect quality and completeness of evidence. Lower confidence when signals are missing or ambiguous. Explain reasoning in confidence_summary.summary_text.
+    10. **Accuracy**: Base conclusions ONLY on provided signals. If uncertain, state it in confidence_summary.summary_text, llm_notes, and solution_alerts.
 
     ---
 
@@ -346,11 +393,54 @@ direct-anthropic:
 
     ### STEP 4: SOLUTION FORMULATION
 
-    For each solution:
-    - Explain WHY it addresses the root cause
-    - Provide EVIDENCE from signals that supports the solution
-    - Estimate SUCCESS PROBABILITY (High/Medium/Low) based on evidence strength
+    Provide EXACTLY THREE solutions with specific types:
 
+    **1. Immediate Mitigation** (Quick stabilization fix):
+    - Focus on immediate adjustments which can resolve the issue
+    - Example: Increase memory limits from 512Mi to 1024Mi as suggested by KRUIZE_RECOMMENDATIONS
+    - Provide step-by-step commands or steps to apply patches
+    - Include exact command examples: `kubectl get deployment -n <namespace>`, `kubectl patch deployment <name> --patch '{"spec":{"template":{"spec":{"containers":[{"name":"<container>","resources":{"limits":{"memory":"1024Mi"}}}]}}}}'`
+
+    **2. Validate & Monitor** (Verification and observation):
+    - Treat this as second step for immediate fix, after applying immediate fix what to monitor and validate
+    - Specify which metrics to watch (memory usage %, GC pause times, restart count)
+    - Provide commands to monitor: `kubectl top pod`, `kubectl logs -f`, Prometheus queries
+    - Define success criteria (e.g., memory usage stays below 80%, no restarts for 24h)
+
+    **3. Root Cause Fix** (Permanent code/configuration change):
+    - Focus on detailed code changes or architectural improvements
+    - Example: Implement connection pooling, fix memory leaks, optimize data structures
+    - Provide specific file locations and code patterns to change
+    - Include validation steps after code changes
+
+    **Solution Confidence Score (0.0-1.0)** for EACH solution:
+    - 0.9-1.0: High confidence - strong evidence supports this solution
+    - 0.7-0.8: Medium confidence - reasonable solution but evidence is incomplete
+    - 0.3-0.6: Low confidence - speculative solution due to missing data
+    - 0.0-0.2: Very low confidence - insufficient evidence, best-effort guess
+
+    **Solution Alerts**: Add alerts ONLY when confidence is LOW (<0.7) or critical data is missing:
+    - "APPLICATION_LOGS not available - cannot identify specific code causing memory leak"
+    - "JFR_ANALYSIS missing - unable to pinpoint exact memory pool exhaustion"
+    - "KRUIZE_RECOMMENDATIONS unavailable - resource suggestions are based on current metrics only"
+    - "Limited evidence - this solution is speculative and may not address the root cause"
+    - "Insufficient data to provide confident recommendation for this solution type"
+    - "Missing signals: [list] - collect these to enable better recommendations"
+
+    **CRITICAL - JSON Structure Requirement**:
+    ALWAYS return EXACTLY THREE recommendation objects in the array. NEVER omit a solution or return fewer than three.
+
+    If you cannot determine a confident solution due to missing data:
+    - Still include the complete solution object with all required fields
+    - Use a descriptive title indicating uncertainty, such as:
+      * "Unable to Recommend Immediate Fix" or "Insufficient Data for Immediate Mitigation"
+      * "Limited Monitoring Guidance Available" or "Unable to Define Validation Steps"
+      * "Unable to Determine Root Cause Fix" or "Insufficient Data for Permanent Solution"
+    - In solution_description: Explain which signals are missing and why you cannot provide a confident recommendation
+    - In implementation_notes: State "Cannot provide detailed steps due to insufficient data. Recommend collecting: [list missing signals]"
+    - Set solution_confidence_score to a low value (0.0-0.3)
+    - In solution_alerts: Add detailed explanations of missing signals and their impact on the recommendation
+    
     ### STEP 5: CONFIDENCE SCORING
 
     **RCA Confidence (0.0-1.0)**: How confident in the identified root cause?
@@ -359,17 +449,12 @@ direct-anthropic:
     - 0.4-0.6: Moderate evidence (some signals missing or ambiguous)
     - 0.0-0.3: Weak evidence (limited signals, high uncertainty)
 
-    **Solution Confidence (0.0-1.0)**: How confident proposed solutions will work?
-    - 1.0: Solution directly addresses proven root cause
-    - 0.7-0.9: Solution addresses likely root cause with strong evidence
-    - 0.4-0.6: Solution is reasonable but evidence is incomplete
-    - 0.0-0.3: Solution is speculative due to limited evidence
-
     **IMPORTANT**: If evidence is insufficient to determine a definitive root cause:
     - Select the most likely anomaly category based on available signals
     - Lower confidence scores accordingly (typically 0.3-0.6 range)
-    - Explicitly state the uncertainty in confidence_summary and llm_notes
+    - Explicitly state the uncertainty in confidence_summary.summary_text and llm_notes
     - Mention which missing signals would have helped confirm the diagnosis
+    - Add solution_alerts for each recommendation explaining what data is missing
     - Still provide best-effort solutions based on the most probable cause
 
     ## OUTPUT FORMAT
@@ -394,29 +479,36 @@ direct-anthropic:
         "<Evidence 6: Kruize recommendations showing resource gaps>",
         "<All relevant evidences from available signals. Each must be specific and quantifiable.>"
       ],
-      "possible_solutions": [
+      "recommendations": [
         {
-          "solution": "<Solution 1: Specific actionable recommendation>",
-          "justification": "<WHY this addresses root cause. Reference specific evidence.>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<How to implement and what to monitor>"
+          "solution_type": "Immediate Mitigation",
+          "solution_title": "<Short actionable title, e.g., 'Increase Memory Limit to 1024Mi'>",
+          "solution_description": "<Brief description of immediate resource adjustment. Example: Increase memory limit from 512Mi to 1024Mi based on Kruize recommendations to prevent immediate OOMKilled events.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Alert 1: Only include if confidence < 0.7. Example: 'KRUIZE_RECOMMENDATIONS not available - memory values are estimated from current usage patterns'>", "<Alert 2: Example: 'Without APPLICATION_LOGS, cannot confirm if resource increase alone will solve the issue'>"]
         },
         {
-          "solution": "<Solution 2: Another concrete fix>",
-          "justification": "<WHY this will work based on evidence>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<Implementation guidance>"
+          "solution_type": "Validate & Monitor",
+          "solution_title": "<Short title, e.g., 'Monitor Memory Usage Post-Increase'>",
+          "solution_description": "<Description of validation steps. Example: Monitor memory consumption, GC behavior, and pod stability after resource increase to validate the fix and gather data for permanent solution.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Only include if confidence < 0.7. Example: 'PROMETHEUS_METRICS unavailable - manual observation required'>"]
         },
         {
-          "solution": "<Solution 3: Long-term preventive measure>",
-          "justification": "<WHY this prevents recurrence>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<Implementation guidance>"
+          "solution_type": "Root Cause Fix",
+          "solution_title": "<Short title, e.g., 'Implement Connection Pooling in DatabaseService'>",
+          "solution_description": "<Detailed permanent fix description. Example: Modify DatabaseService.java to implement HikariCP connection pooling with max pool size of 20 connections. This prevents unbounded connection creation that leads to memory exhaustion. Add periodic cleanup of idle connections after 10 minutes.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Only include if confidence < 0.7. Example: 'APPLICATION_LOGS missing - cannot identify exact code location causing memory leak, solution is based on common patterns'>", "<Example: 'JFR_ANALYSIS unavailable - specific memory pool exhaustion point unknown, recommendation is generalized'>"]
         }
       ],
-      "llm_confidence_score_for_rca": <0.0 to 1.0>,
-      "llm_confidence_score_for_solution": <0.0 to 1.0>,
-      "confidence_summary": "<2-4 sentences explaining confidence scores. Justify WHY you have high or low confidence. Mention: which signals provided strong evidence, which were missing, any ambiguities, how complete the evidence chain is.>",
+      "confidence_summary": {
+        "rca_confidence_score": <0.0 to 1.0>,
+        "summary_text": "<2-4 sentences explaining the RCA confidence score. Justify WHY you have high or low confidence. Mention: which signals provided strong evidence, which were missing, any ambiguities, how complete the evidence chain is. If score is low, mention what additional data would increase confidence.>"
+      },
       "llm_notes": "<3-7 sentences narrating the analysis process. Include: (1) What signals were available and first impressions, (2) How you analyzed the data step-by-step, (3) How different signals corroborated findings, (4) Key decision points for anomaly type and root cause, (5) What was difficult or ambiguous, (6) How JFR data influenced analysis (if available), (7) Why you assigned the confidence scores, (8) Alternative theories considered and ruled out. Be conversational and transparent.>"
     }
 
@@ -427,9 +519,11 @@ direct-anthropic:
     3. **Evidence Requirements**: All evidences MUST be directly observable in provided signals. Supporting logs MUST be verbatim quotes from APPLICATION_LOGS. Do NOT construct, assume, or infer evidence.
     4. **Signal Handling**: Work with whatever signals are provided. Note missing signals in llm_notes and adjust confidence scores. Do not assume data that wasn't provided.
     5. **Language**: issue_description: Plain, non-technical language for general users. technical_description: Full technical detail for developers.
-    6. **Solution Justification**: Every solution MUST have justification explaining WHY it will work. Reference specific evidence from signals. Success probability MUST be realistic based on evidence. Provide 1-3 solutions. Do not invent additional solutions to satisfy a count requirement.
-    7. **Confidence Scoring**: Scores MUST reflect quality and completeness of evidence. Lower confidence when signals are missing or ambiguous. Explain reasoning in confidence_summary.
-    8. **Accuracy**: Base conclusions ONLY on provided signals. If uncertain, state it in confidence_summary and llm_notes.
+    6. **Recommendations Structure**: Provide EXACTLY 3 recommendations with solution_type: "Immediate Mitigation", "Validate & Monitor", "Root Cause Fix". Each must have solution_confidence_score (0.0-1.0) and solution_alerts array (populate only when confidence < 0.7 or critical data missing).
+    7. **Implementation Notes**: Must be detailed step-by-step instructions with actual commands, file paths, code locations, and monitoring queries. Include placeholders like <deployment-name>, <namespace>, <pod-name> that users can replace.
+    8. **Solution Alerts**: Add alerts ONLY when solution confidence is low (<0.7). Explicitly state which signals are missing and how it impacts the solution reliability. Example: "APPLICATION_LOGS not available - cannot pinpoint exact memory leak location"
+    9. **Confidence Scoring**: Scores MUST reflect quality and completeness of evidence. Lower confidence when signals are missing or ambiguous. Explain reasoning in confidence_summary.summary_text.
+    10. **Accuracy**: Base conclusions ONLY on provided signals. If uncertain, state it in confidence_summary.summary_text, llm_notes, and solution_alerts.
 
     ---
 
@@ -563,11 +657,54 @@ bob:
 
     ### STEP 4: SOLUTION FORMULATION
 
-    For each solution:
-    - Explain WHY it addresses the root cause
-    - Provide EVIDENCE from signals that supports the solution
-    - Estimate SUCCESS PROBABILITY (High/Medium/Low) based on evidence strength
+    Provide EXACTLY THREE solutions with specific types:
 
+    **1. Immediate Mitigation** (Quick stabilization fix):
+    - Focus on immediate adjustments which can resolve the issue
+    - Example: Increase memory limits from 512Mi to 1024Mi as suggested by KRUIZE_RECOMMENDATIONS
+    - Provide step-by-step commands or steps to apply patches
+    - Include exact command examples: `kubectl get deployment -n <namespace>`, `kubectl patch deployment <name> --patch '{"spec":{"template":{"spec":{"containers":[{"name":"<container>","resources":{"limits":{"memory":"1024Mi"}}}]}}}}'`
+
+    **2. Validate & Monitor** (Verification and observation):
+    - Treat this as second step for immediate fix, after applying immediate fix what to monitor and validate
+    - Specify which metrics to watch (memory usage %, GC pause times, restart count)
+    - Provide commands to monitor: `kubectl top pod`, `kubectl logs -f`, Prometheus queries
+    - Define success criteria (e.g., memory usage stays below 80%, no restarts for 24h)
+
+    **3. Root Cause Fix** (Permanent code/configuration change):
+    - Focus on detailed code changes or architectural improvements
+    - Example: Implement connection pooling, fix memory leaks, optimize data structures
+    - Provide specific file locations and code patterns to change
+    - Include validation steps after code changes
+
+    **Solution Confidence Score (0.0-1.0)** for EACH solution:
+    - 0.9-1.0: High confidence - strong evidence supports this solution
+    - 0.7-0.8: Medium confidence - reasonable solution but evidence is incomplete
+    - 0.3-0.6: Low confidence - speculative solution due to missing data
+    - 0.0-0.2: Very low confidence - insufficient evidence, best-effort guess
+
+    **Solution Alerts**: Add alerts ONLY when confidence is LOW (<0.7) or critical data is missing:
+    - "APPLICATION_LOGS not available - cannot identify specific code causing memory leak"
+    - "JFR_ANALYSIS missing - unable to pinpoint exact memory pool exhaustion"
+    - "KRUIZE_RECOMMENDATIONS unavailable - resource suggestions are based on current metrics only"
+    - "Limited evidence - this solution is speculative and may not address the root cause"
+    - "Insufficient data to provide confident recommendation for this solution type"
+    - "Missing signals: [list] - collect these to enable better recommendations"
+
+    **CRITICAL - JSON Structure Requirement**:
+    ALWAYS return EXACTLY THREE recommendation objects in the array. NEVER omit a solution or return fewer than three.
+
+    If you cannot determine a confident solution due to missing data:
+    - Still include the complete solution object with all required fields
+    - Use a descriptive title indicating uncertainty, such as:
+      * "Unable to Recommend Immediate Fix" or "Insufficient Data for Immediate Mitigation"
+      * "Limited Monitoring Guidance Available" or "Unable to Define Validation Steps"
+      * "Unable to Determine Root Cause Fix" or "Insufficient Data for Permanent Solution"
+    - In solution_description: Explain which signals are missing and why you cannot provide a confident recommendation
+    - In implementation_notes: State "Cannot provide detailed steps due to insufficient data. Recommend collecting: [list missing signals]"
+    - Set solution_confidence_score to a low value (0.0-0.3)
+    - In solution_alerts: Add detailed explanations of missing signals and their impact on the recommendation
+    
     ### STEP 5: CONFIDENCE SCORING
 
     **RCA Confidence (0.0-1.0)**: How confident in the identified root cause?
@@ -576,17 +713,12 @@ bob:
     - 0.4-0.6: Moderate evidence (some signals missing or ambiguous)
     - 0.0-0.3: Weak evidence (limited signals, high uncertainty)
 
-    **Solution Confidence (0.0-1.0)**: How confident proposed solutions will work?
-    - 1.0: Solution directly addresses proven root cause
-    - 0.7-0.9: Solution addresses likely root cause with strong evidence
-    - 0.4-0.6: Solution is reasonable but evidence is incomplete
-    - 0.0-0.3: Solution is speculative due to limited evidence
-
     **IMPORTANT**: If evidence is insufficient to determine a definitive root cause:
     - Select the most likely anomaly category based on available signals
     - Lower confidence scores accordingly (typically 0.3-0.6 range)
-    - Explicitly state the uncertainty in confidence_summary and llm_notes
+    - Explicitly state the uncertainty in confidence_summary.summary_text and llm_notes
     - Mention which missing signals would have helped confirm the diagnosis
+    - Add solution_alerts for each recommendation explaining what data is missing
     - Still provide best-effort solutions based on the most probable cause
 
     ## OUTPUT FORMAT
@@ -611,29 +743,36 @@ bob:
         "<Evidence 6: Kruize recommendations showing resource gaps>",
         "<All relevant evidences from available signals. Each must be specific and quantifiable.>"
       ],
-      "possible_solutions": [
+      "recommendations": [
         {
-          "solution": "<Solution 1: Specific actionable recommendation>",
-          "justification": "<WHY this addresses root cause. Reference specific evidence.>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<How to implement and what to monitor>"
+          "solution_type": "Immediate Mitigation",
+          "solution_title": "<Short actionable title, e.g., 'Increase Memory Limit to 1024Mi'>",
+          "solution_description": "<Brief description of immediate resource adjustment. Example: Increase memory limit from 512Mi to 1024Mi based on Kruize recommendations to prevent immediate OOMKilled events.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Alert 1: Only include if confidence < 0.7. Example: 'KRUIZE_RECOMMENDATIONS not available - memory values are estimated from current usage patterns'>", "<Alert 2: Example: 'Without APPLICATION_LOGS, cannot confirm if resource increase alone will solve the issue'>"]
         },
         {
-          "solution": "<Solution 2: Another concrete fix>",
-          "justification": "<WHY this will work based on evidence>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<Implementation guidance>"
+          "solution_type": "Validate & Monitor",
+          "solution_title": "<Short title, e.g., 'Monitor Memory Usage Post-Increase'>",
+          "solution_description": "<Description of validation steps. Example: Monitor memory consumption, GC behavior, and pod stability after resource increase to validate the fix and gather data for permanent solution.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Only include if confidence < 0.7. Example: 'PROMETHEUS_METRICS unavailable - manual observation required'>"]
         },
         {
-          "solution": "<Solution 3: Long-term preventive measure>",
-          "justification": "<WHY this prevents recurrence>",
-          "success_probability": "<High | Medium | Low>",
-          "implementation_notes": "<Implementation guidance>"
+          "solution_type": "Root Cause Fix",
+          "solution_title": "<Short title, e.g., 'Implement Connection Pooling in DatabaseService'>",
+          "solution_description": "<Detailed permanent fix description. Example: Modify DatabaseService.java to implement HikariCP connection pooling with max pool size of 20 connections. This prevents unbounded connection creation that leads to memory exhaustion. Add periodic cleanup of idle connections after 10 minutes.>",
+          "implementation_notes": "<Step-by-step commands OR steps>",
+          "solution_confidence_score": <0.0 to 1.0>,
+          "solution_alerts": ["<Only include if confidence < 0.7. Example: 'APPLICATION_LOGS missing - cannot identify exact code location causing memory leak, solution is based on common patterns'>", "<Example: 'JFR_ANALYSIS unavailable - specific memory pool exhaustion point unknown, recommendation is generalized'>"]
         }
       ],
-      "llm_confidence_score_for_rca": <0.0 to 1.0>,
-      "llm_confidence_score_for_solution": <0.0 to 1.0>,
-      "confidence_summary": "<2-4 sentences explaining confidence scores. Justify WHY you have high or low confidence. Mention: which signals provided strong evidence, which were missing, any ambiguities, how complete the evidence chain is.>",
+      "confidence_summary": {
+        "rca_confidence_score": <0.0 to 1.0>,
+        "summary_text": "<2-4 sentences explaining the RCA confidence score. Justify WHY you have high or low confidence. Mention: which signals provided strong evidence, which were missing, any ambiguities, how complete the evidence chain is. If score is low, mention what additional data would increase confidence.>"
+      },
       "llm_notes": "<3-7 sentences narrating the analysis process. Include: (1) What signals were available and first impressions, (2) How you analyzed the data step-by-step, (3) How different signals corroborated findings, (4) Key decision points for anomaly type and root cause, (5) What was difficult or ambiguous, (6) How JFR data influenced analysis (if available), (7) Why you assigned the confidence scores, (8) Alternative theories considered and ruled out. Be conversational and transparent.>"
     }
 
@@ -644,11 +783,12 @@ bob:
     3. **Evidence Requirements**: All evidences MUST be directly observable in provided signals. Supporting logs MUST be verbatim quotes from APPLICATION_LOGS. Do NOT construct, assume, or infer evidence.
     4. **Signal Handling**: Work with whatever signals are provided. Note missing signals in llm_notes and adjust confidence scores. Do not assume data that wasn't provided.
     5. **Language**: issue_description: Plain, non-technical language for general users. technical_description: Full technical detail for developers.
-    6. **Solution Justification**: Every solution MUST have justification explaining WHY it will work. Reference specific evidence from signals. Success probability MUST be realistic based on evidence. Provide 1-3 solutions. Do not invent additional solutions to satisfy a count requirement.
-    7. **Confidence Scoring**: Scores MUST reflect quality and completeness of evidence. Lower confidence when signals are missing or ambiguous. Explain reasoning in confidence_summary.
-    8. **Accuracy**: Base conclusions ONLY on provided signals. If uncertain, state it in confidence_summary and llm_notes.
+    6. **Recommendations Structure**: Provide EXACTLY 3 recommendations with solution_type: "Immediate Mitigation", "Validate & Monitor", "Root Cause Fix". Each must have solution_confidence_score (0.0-1.0) and solution_alerts array (populate only when confidence < 0.7 or critical data missing).
+    7. **Implementation Notes**: Must be detailed step-by-step instructions with actual commands, file paths, code locations, and monitoring queries. Include placeholders like <deployment-name>, <namespace>, <pod-name> that users can replace.
+    8. **Solution Alerts**: Add alerts ONLY when solution confidence is low (<0.7). Explicitly state which signals are missing and how it impacts the solution reliability. Example: "APPLICATION_LOGS not available - cannot pinpoint exact memory leak location"
+    9. **Confidence Scoring**: Scores MUST reflect quality and completeness of evidence. Lower confidence when signals are missing or ambiguous. Explain reasoning in confidence_summary.summary_text.
+    10. **Accuracy**: Base conclusions ONLY on provided signals. If uncertain, state it in confidence_summary.summary_text, llm_notes, and solution_alerts.
 
     ---
 
     Now analyze the above context and provide your RCA in JSON format.
-
