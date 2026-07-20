@@ -22,13 +22,13 @@
 
 CREATE TABLE IF NOT EXISTS alerts (
     id               VARCHAR(21)              NOT NULL,
-    source_alert_id  VARCHAR(255)             NOT NULL,
+    source_alert_id  VARCHAR(255),
     alert_name       VARCHAR(255)             NOT NULL,
     alert_timestamp  TIMESTAMP WITH TIME ZONE,
     severity         VARCHAR(32),
     status           VARCHAR(32)              NOT NULL,   -- ACCEPTED, REJECTED, PROCESSING, PROCESSED
-    container_info   JSONB                    NOT NULL,
-    container_name   VARCHAR(255)             NOT NULL,
+    workload_info    JSONB                    NOT NULL,
+    workload_name    VARCHAR(255)             NOT NULL,
     alert_metadata   JSONB,
     created_at       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS alerts (
     CONSTRAINT pk_alerts PRIMARY KEY (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_alerts_lookup           ON alerts (alert_name);
-CREATE INDEX IF NOT EXISTS idx_alerts_lookup_container ON alerts (container_name);
+CREATE INDEX IF NOT EXISTS idx_alerts_lookup          ON alerts (alert_name);
+CREATE INDEX IF NOT EXISTS idx_alerts_lookup_workload ON alerts (workload_name);
 CREATE INDEX IF NOT EXISTS idx_alerts_status           ON alerts (status);
 CREATE INDEX IF NOT EXISTS idx_alerts_created_at       ON alerts (created_at DESC);
 
