@@ -151,6 +151,32 @@ public interface LLMConfig {
     }
 
     /**
+     * Skills Configuration.
+     */
+    interface SkillsConfig {
+        /**
+         * Whether skills are globally enabled. Can be overridden per-request via
+         * {@link com.causa.core.domain.LLMRequest#enableSkills()}.
+         *
+         * @return {@code true} if skills are enabled (default)
+         */
+        @WithName("enabled")
+        @WithDefault("true")
+        boolean enabled();
+
+        /**
+         * Optional path to an external directory containing additional skills.
+         * Each subdirectory must contain a {@code SKILL.md} file.
+         * External skills are merged on top of bundled classpath skills;
+         * when a name collision occurs the external skill wins.
+         *
+         * @return the filesystem path, or empty if not configured
+         */
+        @WithName("skills-dir")
+        Optional<String> skillsDir();
+    }
+
+    /**
      * BOB Shell specific configuration.
      *
      * <p>Only holds parameters that are unique to BOB Shell. Common parameters such as
@@ -176,20 +202,4 @@ public interface LLMConfig {
     @WithName("skills")
     SkillsConfig skills();
 
-    /**
-     * Skills configuration.
-     *
-     * <p>Controls whether the skills system is globally enabled.
-     * Can be overridden per-request via {@link com.causa.core.domain.LLMRequest#enableSkills()}.
-     */
-    interface SkillsConfig {
-        /**
-         * Whether skills are globally enabled.
-         *
-         * @return {@code true} if skills are enabled (default {@code true})
-         */
-        @WithName("enabled")
-        @WithDefault("true")
-        boolean enabled();
-    }
 }
