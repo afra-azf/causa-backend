@@ -137,6 +137,13 @@ public class ConfigController {
                 continue;
             }
 
+            // Check if key is env-only (cannot be updated at runtime via the API)
+            if (ConfigConstants.isEnvOnly(key)) {
+                rejected.add(new ConfigUpdateResponse.RejectedConfig(key,
+                    key + " cannot be updated at runtime. Set it via environment variable or configmap during startup."));
+                continue;
+            }
+
             // Check if value is blank
             if (value == null || value.isBlank()) {
                 rejected.add(new ConfigUpdateResponse.RejectedConfig(key, "Value must not be blank"));
