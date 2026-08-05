@@ -1,0 +1,157 @@
+package com.causa.common.constants;
+
+/**
+ * API Constants
+ *
+ * <p>Contains API response keys and health-check constants.
+ *
+ * @since 1.0.0
+ */
+public final class ApiConstants {
+
+    private ApiConstants() {
+        // Prevent instantiation
+    }
+
+    /**
+     * Common API response keys.
+     */
+    public static final class Response {
+        private Response() {}
+
+        public static final String STATUS_KEY = "status";
+        public static final String MESSAGE_KEY = "message";
+    }
+
+    /**
+     * Common API status values.
+     */
+    public static final class Status {
+        private Status() {}
+
+        public static final String UP = "UP";
+        public static final String DOWN = "DOWN";
+        public static final String READY = "READY";
+        public static final String NOT_READY = "NOT_READY";
+    }
+
+    /**
+     * Health check constants.
+     */
+    public static final class Health {
+        private Health() {}
+
+        public static final String LIVENESS_NAME = "causa-liveness";
+        public static final String READINESS_NAME = "causa-readiness";
+
+        public static final String LIVENESS_UP_MESSAGE = "Causa is alive and running";
+        public static final String READINESS_UP_MESSAGE = "Causa is ready to accept requests";
+        public static final String READINESS_DOWN_MESSAGE = "Causa is not ready to accept requests";
+    }
+
+    /**
+     * API version constants.
+     */
+    public static final class Version {
+        private Version() {}
+
+        public static final String API_V1 = "/api/v1";
+    }
+
+    /**
+     * API endpoint paths organized by resource.
+     */
+    public static final class Paths {
+        private Paths() {}
+
+        /**
+         * Webhook endpoints for external system integrations.
+         */
+        public static final class Webhooks {
+            private Webhooks() {}
+
+            public static final String ALERTS = Version.API_V1 + "/webhooks/alerts";
+        }
+
+        /**
+         * Alert query API.
+         * GET /api/v1/alerts              — list alerts (optionally filtered by workload_name and/or namespace)
+         * GET /api/v1/alerts/{id}         — single alert by ID
+         */
+        public static final class Alerts {
+            private Alerts() {}
+
+            public static final String BASE              = Version.API_V1 + "/alerts";
+            public static final String PATH_PARAM_ID     = "id";
+            public static final String BY_ID             = "/{" + PATH_PARAM_ID + "}";
+            public static final String QUERY_WORKLOAD    = "workload_name";
+            public static final String QUERY_NAMESPACE   = "namespace";
+        }
+
+        /**
+         * Diagnostics query API.
+         * GET /api/v1/diagnostics        — list all diagnostics (summary)
+         * GET /api/v1/diagnostics/{id}   — full diagnostic detail
+         */
+        public static final class Diagnostics {
+            private Diagnostics() {}
+
+            public static final String BASE       = Version.API_V1 + "/diagnostics";
+            public static final String PATH_PARAM = "id";
+            public static final String BY_ID      = "/{" + PATH_PARAM + "}";
+        }
+
+        /**
+         * Health check paths.
+         */
+        public static final class Health {
+            private Health() {}
+
+            public static final String LIVENESS = "/q/health/live";
+            public static final String READINESS = "/q/health/ready";
+            public static final String HEALTHZ = Version.API_V1 + "/healthz";
+        }
+
+        /**
+         * Configuration management API.
+         * GET  /api/v1/configs              — list all configs (optional ?category filter)
+         * GET  /api/v1/configs/{key}        — single config by key
+         * POST /api/v1/configs              — upsert config values
+         */
+        public static final class Configs {
+            private Configs() {}
+
+            public static final String BASE = Version.API_V1 + "/configs";
+            public static final String PATH_PARAM_KEY = "key";
+            public static final String BY_KEY = "/{" + PATH_PARAM_KEY + "}";
+            public static final String QUERY_CATEGORY = "category";
+        }
+    }
+
+    /**
+     * Health check response field keys.
+     */
+    public static final class HealthCheckResponse {
+        private HealthCheckResponse() {}
+
+        public static final String TIMESTAMP_KEY = "timestamp";
+        public static final String VERSION_KEY = "version";
+        public static final String COMPONENTS_KEY = "components";
+        public static final String LATENCY_MS_KEY = "latency_ms";
+    }
+
+    /**
+     * Structured logging field names.
+     */
+    public static final class LogFields {
+        private LogFields() {}
+
+        public static final String COMPONENT = "component";
+        public static final String STATUS = "status";
+        public static final String LATENCY_MS = "latency_ms";
+        public static final String ERROR = "error";
+        public static final String ENDPOINT = "endpoint";
+        public static final String HTTP_STATUS = "http_status";
+    }
+
+}
