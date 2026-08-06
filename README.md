@@ -1,8 +1,5 @@
 <!-- Back to top anchor -->
 <a id="readme-top"></a>
-
-<!-- PROJECT LOGO -->
-<br />
 <div align="center">
   <h2 align="center">Causa AI Agent</h2>
   <p align="center">
