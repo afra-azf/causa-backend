@@ -94,6 +94,10 @@ Instead of engineers manually collecting data from multiple tools, Causa deliver
 | Knowledge stays with individual engineers. | Every incident follows a consistent, repeatable investigation workflow. |
 | High operational overhead during production incidents. | Faster incident resolution, less downtime, and improved reliability. |
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
 ## Getting Started
 
 ### Prerequisites
