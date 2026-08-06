@@ -10,7 +10,7 @@ This document covers the custom aggregated health endpoint exposed by the backen
 |---|---|---|---|
 | `GET /api/v1/healthz` | Return aggregated application health across core and integration components | `200 OK` | `503 Service Unavailable/ Degraded/ Down`, `500 Internal Server Error` |
 
-### cURL
+### Request Example (cURL)
 
 **Using `{{BASE_URL}}`:**
 
@@ -24,7 +24,7 @@ curl {{BASE_URL}}/api/v1/healthz
 curl http://localhost:8080/api/v1/healthz
 ```
 
-### Actual response from localhost:8080
+### Response Example
 
 ```json
 {

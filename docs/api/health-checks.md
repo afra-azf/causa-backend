@@ -18,7 +18,7 @@ This document covers the Quarkus health endpoints exposed by the app.
 
 Returns the overall Quarkus health response including liveness and readiness contributors.
 
-### cURL
+### Request Example (cURL)
 
 **Using `{{BASE_URL}}`:**
 
@@ -32,7 +32,7 @@ curl {{BASE_URL}}/q/health
 curl http://localhost:8080/q/health
 ```
 
-### Actual response from localhost:8080
+### Response Example
 
 ```json
 {
@@ -79,7 +79,7 @@ curl http://localhost:8080/q/health
 
 Returns the liveness check only.
 
-### cURL
+### Request Example (cURL)
 
 **Using `{{BASE_URL}}`:**
 
@@ -93,7 +93,7 @@ curl {{BASE_URL}}/q/health/live
 curl http://localhost:8080/q/health/live
 ```
 
-### Actual response from localhost:8080
+### Response Example
 
 ```json
 {
@@ -117,7 +117,7 @@ curl http://localhost:8080/q/health/live
 
 Returns readiness checks only.
 
-### cURL
+### Request Example (cURL)
 
 **Using `{{BASE_URL}}`:**
 
@@ -131,7 +131,7 @@ curl {{BASE_URL}}/q/health/ready
 curl http://localhost:8080/q/health/ready
 ```
 
-### Actual response from localhost:8080
+### Response Example
 
 ```json
 {
