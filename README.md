@@ -7,6 +7,10 @@
     <br /><br />
     <a href="https://github.com/causaai/causa-backend/tree/main/docs">Explore The Docs</a>
     &middot;
+    <a href="https://github.com/causaai/causa-backend/tree/main/docs/api">API Specifications</a>
+    &middot;
+    <a href="https://github.com/causaai/causa-backend/tree/main/docs/tunables">Tunables</a>
+    &middot;
     <a href="https://github.com/causaai/causa-backend/issues/new?labels=bug">Report Bug</a>
     &middot;
     <a href="https://github.com/causaai/causa-backend/issues/new?labels=enhancement">Request Feature</a>
