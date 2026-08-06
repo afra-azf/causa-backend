@@ -1,24 +1,6 @@
 <!-- Back to top anchor -->
 <a id="readme-top"></a>
 
-<!-- MARKDOWN LINKS & IMAGES -->
-
-<!-- Shields -->
-[contributors-shield]: https://img.shields.io/github/contributors/causaai/causa-backend.svg?style=for-the-badge
-[contributors-url]: https://github.com/causaai/causa-backend/graphs/contributors
-
-[forks-shield]: https://img.shields.io/github/forks/causaai/causa-backend.svg?style=for-the-badge
-[forks-url]: https://github.com/causaai/causa-backend/network/members
-
-[stars-shield]: https://img.shields.io/github/stars/causaai/causa-backend.svg?style=for-the-badge
-[stars-url]: https://github.com/causaai/causa-backend/stargazers
-
-[issues-shield]: https://img.shields.io/github/issues/causaai/causa-backend.svg?style=for-the-badge
-[issues-url]: https://github.com/causaai/causa-backend/issues
-
-[license-shield]: https://img.shields.io/github/license/causaai/causa-backend.svg?style=for-the-badge
-[license-url]: https://github.com/causaai/causa-backend/blob/main/LICENSE
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -28,10 +10,18 @@
     <br /><br />
     <a href="https://github.com/causaai/causa-backend/tree/main/docs">Explore The Docs</a>
     &middot;
-    <a href="https://github.com/your_org/causa-backend/issues/new?labels=bug">Report Bug</a>
+    <a href="https://github.com/causaai/causa-backend/issues/new?labels=bug">Report Bug</a>
     &middot;
-    <a href="https://github.com/your_org/causa-backend/issues/new?labels=enhancement">Request Feature</a>
+    <a href="https://github.com/causaai/causa-backend/issues/new?labels=enhancement">Request Feature</a>
   </p>
+  <br />
+
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![License][license-shield]][license-url]
+
 </div>
 
 ---
@@ -186,3 +176,24 @@ Project Link: [https://github.com/causaai/causa-backend](https://github.com/caus
 <p align="center">
   Built with ❤️ by the <strong>Causa Team</strong>
 </p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+[contributors-shield]: https://img.shields.io/github/contributors/causaai/causa-backend.svg?style=for-the-badge
+[contributors-url]: https://github.com/causaai/causa-backend/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/causaai/causa-backend.svg?style=for-the-badge
+[forks-url]: https://github.com/causaai/causa-backend/network/members
+[stars-shield]: https://img.shields.io/github/stars/causaai/causa-backend.svg?style=for-the-badge
+[stars-url]: https://github.com/causaai/causa-backend/stargazers
+[issues-shield]: https://img.shields.io/github/issues/causaai/causa-backend.svg?style=for-the-badge
+[issues-url]: https://github.com/causaai/causa-backend/issues
+[license-shield]: https://img.shields.io/github/license/causaai/causa-backend.svg?style=for-the-badge
+[license-url]: https://github.com/causaai/causa-backend/blob/main/LICENSE
+
+[quarkus-shield]: https://img.shields.io/badge/Quarkus-3.36.1-4695EB?style=for-the-badge&logo=quarkus&logoColor=white
+[quarkus-url]: https://quarkus.io/
+[java-shield]: https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white
+[java-url]: https://adoptium.net/
+[postgres-shield]: https://img.shields.io/badge/PostgreSQL-pgvector-336791?style=for-the-badge&logo=postgresql&logoColor=white
+[postgres-url]: https://github.com/pgvector/pgvector
+[lc4j-shield]: https://img.shields.io/badge/LangChain4J-1.15.1-00897B?style=for-the-badge
+[lc4j-url]: https://docs.langchain4j.dev/
