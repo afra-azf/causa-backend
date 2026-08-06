@@ -297,7 +297,7 @@ The following config keys are currently accepted by [`POST /api/v1/configs`](./c
 
 ### Not runtime updatable
 
-- `CLUSTER_TYPE` cannot be updated through [`POST /api/v1/configs`](docs/api/configs-api.md).
+- `CLUSTER_TYPE` cannot be updated through [`POST /api/v1/configs`](./configs-api.md).
 - It is environment-only and must be set before startup.
 
 ## ADC credentials note
