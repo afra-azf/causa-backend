@@ -267,7 +267,8 @@ Unknown config key: causa.alert.min-severity
 
 ## Runtime updatable config keys
 
-The following config keys are currently accepted by [`POST /api/v1/configs`](docs/api/configs-api.md) for runtime updates.
+The following config keys are currently accepted by [`POST /api/v1/configs`](./configs-api.md) for runtime updates.
+
 
 | Key | Category | Type | Sensitive | Runtime updatable |
 |---|---|---|---|---|
