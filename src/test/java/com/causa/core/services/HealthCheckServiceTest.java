@@ -452,6 +452,67 @@ class HealthCheckServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // Async Profiler and Quarkus MCP health — cluster mode
+    // -------------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("Async Profiler and Quarkus MCP Health Tests (cluster mode)")
+    class AsyncProfilerAndQuarkusHealthTests {
+
+        @Test
+        @DisplayName("Cluster mode — mcp_async_profiler component present and DOWN (no real HTTP)")
+        void clusterModeIncludesAsyncProfilerComponent() {
+            when(databaseConnectionService.isReady()).thenReturn(false);
+            when(llmPromptSender.isReady()).thenReturn(false);
+
+            HealthCheckResponseDto response = healthCheckService.getSystemHealth();
+
+            ComponentHealthDto asyncProfiler = response.getComponents()
+                    .get(HealthCheckConstants.ComponentNames.MCP_ASYNC_PROFILER);
+            assertNotNull(asyncProfiler, "mcp_async_profiler component must be present in cluster mode");
+            assertEquals(AppConstants.HealthStatus.DOWN.getValue(), asyncProfiler.getStatus());
+            assertNotNull(asyncProfiler.getLatencyMs());
+        }
+
+        @Test
+        @DisplayName("Cluster mode — mcp_quarkus component present and DOWN (no real HTTP)")
+        void clusterModeIncludesQuarkusComponent() {
+            when(databaseConnectionService.isReady()).thenReturn(false);
+            when(llmPromptSender.isReady()).thenReturn(false);
+
+            HealthCheckResponseDto response = healthCheckService.getSystemHealth();
+
+            ComponentHealthDto quarkus = response.getComponents()
+                    .get(HealthCheckConstants.ComponentNames.MCP_QUARKUS);
+            assertNotNull(quarkus, "mcp_quarkus component must be present in cluster mode");
+            assertEquals(AppConstants.HealthStatus.DOWN.getValue(), quarkus.getStatus());
+            assertNotNull(quarkus.getLatencyMs());
+        }
+
+        @Test
+        @DisplayName("DEGRADED — database UP, LLM UP, async profiler DOWN, quarkus DOWN")
+        void degradedWhenDbAndLlmUpButAsyncProfilerAndQuarkusDown() throws Exception {
+            // DB UP
+            when(databaseConnectionService.isReady()).thenReturn(true);
+            when(dataSource.getConnection()).thenReturn(connection);
+            when(connection.createStatement()).thenReturn(statement);
+            when(statement.execute("SELECT 1")).thenReturn(true);
+            // LLM UP
+            when(llmPromptSender.isReady()).thenReturn(true);
+            when(appConfig.getLlmConfig()).thenReturn(llmConfigSnapshot);
+            when(llmConfigSnapshot.getProvider()).thenReturn("bob");
+            when(llmConfigSnapshot.getModelName()).thenReturn("bob");
+            when(llmPromptSender.send(any(LLMRequest.class)))
+                    .thenReturn(new LLMResponse("OK", "bob", 1L, 1L, 0L, 0L, 10L));
+            // async profiler + quarkus → DOWN (192.0.2.1 + 1ms timeout)
+
+            assertEquals(AppConstants.HealthStatus.DEGRADED.getValue(),
+                    healthCheckService.getSystemHealth().getStatus(),
+                    "System must be DEGRADED (not DOWN) when only non-critical MCPs are down");
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // VM platform mode — filesystem MCP only
     // -------------------------------------------------------------------------
 
@@ -494,12 +555,49 @@ class HealthCheckServiceTest {
         }
 
         @Test
+        @DisplayName("VM mode — mcp_async_profiler and mcp_quarkus absent in VM mode")
+        void vmModeOmitsAsyncProfilerAndQuarkus() {
+            when(databaseConnectionService.isReady()).thenReturn(false);
+            when(llmPromptSender.isReady()).thenReturn(false);
+
+            HealthCheckResponseDto response = vmHealthService.getSystemHealth();
+
+            assertFalse(response.getComponents()
+                    .containsKey(HealthCheckConstants.ComponentNames.MCP_ASYNC_PROFILER),
+                    "mcp_async_profiler must NOT appear in VM mode");
+            assertFalse(response.getComponents()
+                    .containsKey(HealthCheckConstants.ComponentNames.MCP_QUARKUS),
+                    "mcp_quarkus must NOT appear in VM mode");
+        }
+
+        @Test
         @DisplayName("VM mode — overall DOWN when database is DOWN")
         void vmModeDownWhenDatabaseDown() {
             when(databaseConnectionService.isReady()).thenReturn(false);
             when(llmPromptSender.isReady()).thenReturn(false);
 
             assertEquals(AppConstants.HealthStatus.DOWN.getValue(),
+                    vmHealthService.getSystemHealth().getStatus());
+        }
+
+        @Test
+        @DisplayName("VM mode — overall status unaffected by absent async profiler / quarkus")
+        void vmModeOverallStatusIgnoresAsyncProfilerAndQuarkus() throws Exception {
+            // DB UP, LLM UP — async profiler + quarkus not checked in VM mode
+            when(databaseConnectionService.isReady()).thenReturn(true);
+            when(dataSource.getConnection()).thenReturn(connection);
+            when(connection.createStatement()).thenReturn(statement);
+            when(statement.execute("SELECT 1")).thenReturn(true);
+            when(llmPromptSender.isReady()).thenReturn(true);
+            when(appConfig.getLlmConfig()).thenReturn(llmConfigSnapshot);
+            when(llmConfigSnapshot.getProvider()).thenReturn("bob");
+            when(llmConfigSnapshot.getModelName()).thenReturn("bob");
+            when(llmPromptSender.send(any(LLMRequest.class)))
+                    .thenReturn(new LLMResponse("OK", "bob", 1L, 1L, 0L, 0L, 10L));
+
+            // Only filesystem MCP is checked — it will be DOWN (dead endpoint)
+            // so overall should be DEGRADED, not UP, and NOT caused by async profiler/quarkus
+            assertEquals(AppConstants.HealthStatus.DEGRADED.getValue(),
                     vmHealthService.getSystemHealth().getStatus());
         }
     }
