@@ -1060,102 +1060,77 @@ public class McpContextCollector {
     /**
      * Collects Async Profiler MCP context (JFR report and flame graph).
      *
-     * <p>Calls two tools using the same pod_name argument pattern as Cryostat.
-     * Failures are caught per-tool — one failure does not prevent the other from running.
-     *
      * @param builder the context builder to populate
      * @param alert the alert
      */
     private void collectAsyncProfilerContext(DiagnosticContext.Builder builder, Alert alert) {
-        String podName = alert.getWorkloadInfo().podName();
         String endpoint = mcpConfig.asyncProfiler().endpoint() + McpConstants.Paths.MCP_ENDPOINT;
         int timeout = mcpConfig.asyncProfiler().timeoutMs();
+        String podName = alert.getWorkloadInfo().podName();
 
-        // get_jfr_report
-        try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
-            ObjectNode arguments = objectMapper.createObjectNode();
-            arguments.put(McpConstants.Arguments.POD_NAME, podName);
-            JsonNode result = callMcpTool(endpoint, sessionId, McpConstants.Tools.ASYNC_PROFILER_GET_JFR_REPORT, arguments, timeout);
-            builder.jfrReport(extractTextFromContent(result));
-            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_JFR_REPORT)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .log();
-        } catch (Exception e) {
-            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_JFR_REPORT)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
-        }
+        builder.jfrReport(callMcpToolSafe(endpoint, timeout,
+                McpConstants.Tools.ASYNC_PROFILER_GET_JFR_REPORT, podName, alert,
+                LogMessages.Mcp.MCP_ASYNC_PROFILER_JFR_REPORT));
 
-        // get_flame_graph
-        try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
-            ObjectNode arguments = objectMapper.createObjectNode();
-            arguments.put(McpConstants.Arguments.POD_NAME, podName);
-            JsonNode result = callMcpTool(endpoint, sessionId, McpConstants.Tools.ASYNC_PROFILER_GET_FLAME_GRAPH, arguments, timeout);
-            builder.flameGraph(extractTextFromContent(result));
-            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_FLAME_GRAPH)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .log();
-        } catch (Exception e) {
-            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_FLAME_GRAPH)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
-        }
+        builder.flameGraph(callMcpToolSafe(endpoint, timeout,
+                McpConstants.Tools.ASYNC_PROFILER_GET_FLAME_GRAPH, podName, alert,
+                LogMessages.Mcp.MCP_ASYNC_PROFILER_FLAME_GRAPH));
     }
 
     /**
      * Collects Quarkus MCP context (metrics snapshot and health status).
      *
-     * <p>Calls two tools using the same pod_name argument pattern as Cryostat.
-     * Failures are caught per-tool — one failure does not prevent the other from running.
-     *
      * @param builder the context builder to populate
      * @param alert the alert
      */
     private void collectQuarkusContext(DiagnosticContext.Builder builder, Alert alert) {
-        String podName = alert.getWorkloadInfo().podName();
         String endpoint = mcpConfig.quarkus().endpoint() + McpConstants.Paths.MCP_ENDPOINT;
         int timeout = mcpConfig.quarkus().timeoutMs();
+        String podName = alert.getWorkloadInfo().podName();
 
-        // get_metrics_snapshot
+        builder.quarkusMetrics(callMcpToolSafe(endpoint, timeout,
+                McpConstants.Tools.QUARKUS_GET_METRICS_SNAPSHOT, podName, alert,
+                LogMessages.Mcp.MCP_QUARKUS_METRICS_SNAPSHOT));
+
+        builder.quarkusHealth(callMcpToolSafe(endpoint, timeout,
+                McpConstants.Tools.QUARKUS_GET_HEALTH_STATUS, podName, alert,
+                LogMessages.Mcp.MCP_QUARKUS_HEALTH_STATUS));
+    }
+
+    /**
+     * Calls a single pod-scoped MCP tool safely, logging success or warning on failure.
+     *
+     * <p>Encapsulates the repetitive session-init → tool-call → extract-text → warn-on-error
+     * pattern shared by Async Profiler and Quarkus collectors. Each call gets its own MCP
+     * session; a failure returns {@code null} without affecting sibling tool calls.
+     *
+     * @param endpoint   full MCP endpoint URL (base + /mcp)
+     * @param timeoutMs  HTTP timeout in milliseconds
+     * @param toolName   MCP tool name to invoke
+     * @param podName    pod_name argument value
+     * @param alert      originating alert (used only for log fields)
+     * @param successMsg info log message to emit on success
+     * @return extracted text result, or {@code null} on any failure
+     */
+    private String callMcpToolSafe(String endpoint, int timeoutMs, String toolName,
+                                    String podName, Alert alert, String successMsg) {
         try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
+            String sessionId = initializeMcpSession(endpoint, timeoutMs);
             ObjectNode arguments = objectMapper.createObjectNode();
             arguments.put(McpConstants.Arguments.POD_NAME, podName);
-            JsonNode result = callMcpTool(endpoint, sessionId, McpConstants.Tools.QUARKUS_GET_METRICS_SNAPSHOT, arguments, timeout);
-            builder.quarkusMetrics(extractTextFromContent(result));
-            log.info(LogMessages.Mcp.MCP_QUARKUS_METRICS_SNAPSHOT)
+            JsonNode result = callMcpTool(endpoint, sessionId, toolName, arguments, timeoutMs);
+            String text = extractTextFromContent(result);
+            log.info(successMsg)
                 .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
                 .log();
+            return text;
         } catch (Exception e) {
             log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_GET_METRICS_SNAPSHOT)
+                .field(McpConstants.LogFields.TOOL, toolName)
                 .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
                 .field(McpConstants.LogFields.ERROR, e.getMessage())
                 .log();
-        }
-
-        // get_health_status
-        try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
-            ObjectNode arguments = objectMapper.createObjectNode();
-            arguments.put(McpConstants.Arguments.POD_NAME, podName);
-            JsonNode result = callMcpTool(endpoint, sessionId, McpConstants.Tools.QUARKUS_GET_HEALTH_STATUS, arguments, timeout);
-            builder.quarkusHealth(extractTextFromContent(result));
-            log.info(LogMessages.Mcp.MCP_QUARKUS_HEALTH_STATUS)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .log();
-        } catch (Exception e) {
-            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_GET_HEALTH_STATUS)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
+            return null;
         }
     }
 
