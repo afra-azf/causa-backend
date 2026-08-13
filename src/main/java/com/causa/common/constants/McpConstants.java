@@ -85,8 +85,7 @@ public final class McpConstants {
         public static final String ASYNC_PROFILER_GET_FLAME_GRAPH  = "get_flame_graph";
 
         // Quarkus MCP tools
-        public static final String QUARKUS_GET_METRICS_SNAPSHOT = "get_metrics_snapshot";
-        public static final String QUARKUS_GET_HEALTH_STATUS     = "get_health_status";
+        public static final String QUARKUS_FETCH_RAW_METRICS = "fetch_raw_metrics_from_endpoint";
 
         // Cryostat MCP tools
         public static final String CRYOSTAT_GET_GC_ANALYSIS = "get_gc_analysis";

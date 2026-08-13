@@ -49,8 +49,7 @@ public final class DiagnosticContext {
     private final String flameGraph;
 
     // Quarkus MCP context (cluster)
-    private final String quarkusMetrics;
-    private final String quarkusHealth;
+    private final String quarkusRawMetrics;
 
     // VM — Filesystem MCP
     private final String libertyLogs;
@@ -83,8 +82,7 @@ public final class DiagnosticContext {
         this.containerAnalysis = builder.containerAnalysis;
         this.jfrReport = builder.jfrReport;
         this.flameGraph = builder.flameGraph;
-        this.quarkusMetrics = builder.quarkusMetrics;
-        this.quarkusHealth = builder.quarkusHealth;
+        this.quarkusRawMetrics = builder.quarkusRawMetrics;
         this.libertyLogs = builder.libertyLogs;
         this.heapStatus = builder.heapStatus;
         this.gcActivity = builder.gcActivity;
@@ -169,12 +167,8 @@ public final class DiagnosticContext {
         return flameGraph;
     }
 
-    public String getQuarkusMetrics() {
-        return quarkusMetrics;
-    }
-
-    public String getQuarkusHealth() {
-        return quarkusHealth;
+    public String getQuarkusRawMetrics() {
+        return quarkusRawMetrics;
     }
 
     public String getHeapStatus() {
@@ -255,7 +249,7 @@ public final class DiagnosticContext {
      * @return true if metrics snapshot or health status are present
      */
     public boolean hasQuarkusContext() {
-        return isNotBlank(quarkusMetrics) || isNotBlank(quarkusHealth);
+        return isNotBlank(quarkusRawMetrics);
     }
 
     /**
@@ -353,8 +347,7 @@ public final class DiagnosticContext {
         appendSection(sb, ContextConstants.SECTION_FLAME_GRAPH, flameGraph);
 
         // Quarkus context
-        appendSection(sb, ContextConstants.SECTION_QUARKUS_METRICS, quarkusMetrics);
-        appendSection(sb, ContextConstants.SECTION_QUARKUS_HEALTH, quarkusHealth);
+        appendSection(sb, ContextConstants.SECTION_QUARKUS_RAW_METRICS, quarkusRawMetrics);
     }
 
     private void appendVmSections(StringBuilder sb) {
@@ -428,8 +421,7 @@ public final class DiagnosticContext {
         private String containerAnalysis;
         private String jfrReport;
         private String flameGraph;
-        private String quarkusMetrics;
-        private String quarkusHealth;
+        private String quarkusRawMetrics;
         private String libertyLogs;
         private String heapStatus;
         private String gcActivity;
@@ -535,13 +527,8 @@ public final class DiagnosticContext {
 
         // Cluster — Quarkus MCP
 
-        public Builder quarkusMetrics(String quarkusMetrics) {
-            this.quarkusMetrics = quarkusMetrics;
-            return this;
-        }
-
-        public Builder quarkusHealth(String quarkusHealth) {
-            this.quarkusHealth = quarkusHealth;
+        public Builder quarkusRawMetrics(String quarkusRawMetrics) {
+            this.quarkusRawMetrics = quarkusRawMetrics;
             return this;
         }
 
