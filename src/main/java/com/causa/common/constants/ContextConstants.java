@@ -46,8 +46,7 @@ public final class ContextConstants {
     public static final String SECTION_FLAME_GRAPH   = "FLAME GRAPH (Async Profiler MCP)";
 
     // Quarkus MCP section headers
-    public static final String SECTION_QUARKUS_METRICS = "QUARKUS METRICS SNAPSHOT (Quarkus MCP)";
-    public static final String SECTION_QUARKUS_HEALTH  = "QUARKUS HEALTH STATUS (Quarkus MCP)";
+    public static final String SECTION_QUARKUS_RAW_METRICS = "QUARKUS RAW METRICS (Quarkus MCP)";
 
     // Identity field labels
     public static final String LABEL_POD = "Pod";

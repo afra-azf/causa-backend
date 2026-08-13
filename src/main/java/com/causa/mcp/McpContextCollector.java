@@ -1088,13 +1088,9 @@ public class McpContextCollector {
         int timeout = mcpConfig.quarkus().timeoutMs();
         String podName = alert.getWorkloadInfo().podName();
 
-        builder.quarkusMetrics(callMcpToolSafe(endpoint, timeout,
-                McpConstants.Tools.QUARKUS_GET_METRICS_SNAPSHOT, podName, alert,
-                LogMessages.Mcp.MCP_QUARKUS_METRICS_SNAPSHOT));
-
-        builder.quarkusHealth(callMcpToolSafe(endpoint, timeout,
-                McpConstants.Tools.QUARKUS_GET_HEALTH_STATUS, podName, alert,
-                LogMessages.Mcp.MCP_QUARKUS_HEALTH_STATUS));
+        builder.quarkusRawMetrics(callMcpToolSafe(endpoint, timeout,
+                McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS, podName, alert,
+                LogMessages.Mcp.MCP_QUARKUS_RAW_METRICS));
     }
 
     /**

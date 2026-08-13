@@ -213,8 +213,7 @@ public final class LogMessages {
         public static final String MCP_ASYNC_PROFILER_FLAME_GRAPH  = "Async Profiler flame graph retrieved";
 
         // Quarkus MCP
-        public static final String MCP_QUARKUS_METRICS_SNAPSHOT = "Quarkus metrics snapshot retrieved";
-        public static final String MCP_QUARKUS_HEALTH_STATUS    = "Quarkus health status retrieved";
+        public static final String MCP_QUARKUS_RAW_METRICS = "Quarkus raw metrics retrieved";
 
         // Cryostat MCP
         public static final String MCP_CRYOSTAT_GC_ANALYSIS = "Cryostat GC analysis retrieved";
