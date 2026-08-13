@@ -1058,7 +1058,25 @@ public class McpContextCollector {
     }
 
     /**
-     * Collects Async Profiler MCP context (JFR report and flame graph).
+     * Collects Async Profiler MCP context from all 6 spec-defined tools.
+     *
+     * <p>Phase 1 — pod-scoped tools (no recording required):
+     * <ol>
+     *   <li>{@code list_profiled_pods} — discover pods with profiler sidecar; extracts
+     *       {@code latestRecordingId} for the alerting pod to use in phase 2.</li>
+     *   <li>{@code get_pod_jvm_status} — JVM health, sidecar readiness, last heartbeat.</li>
+     *   <li>{@code get_jvm_statistics} — live heap %, thread count, GC counts.</li>
+     * </ol>
+     *
+     * <p>Phase 2 — recording-scoped tools (require {@code recording_id} from phase 1):
+     * <ol>
+     *   <li>{@code get_recording} — recording status / lifecycle state.</li>
+     *   <li>{@code get_recording_report} — full profiling report (CPU hotspots, memory, GC).</li>
+     *   <li>{@code get_flame_graph} — call-stack flame graph in JSON format.</li>
+     * </ol>
+     *
+     * <p>Each tool call is in its own try/catch. Phase 2 is skipped if no
+     * {@code latestRecordingId} is found in the phase 1 response.
      *
      * @param builder the context builder to populate
      * @param alert the alert
@@ -1067,14 +1085,200 @@ public class McpContextCollector {
         String endpoint = mcpConfig.asyncProfiler().endpoint() + McpConstants.Paths.MCP_ENDPOINT;
         int timeout = mcpConfig.asyncProfiler().timeoutMs();
         String podName = alert.getWorkloadInfo().podName();
+        String namespace = alert.getWorkloadInfo().namespace();
 
-        builder.jfrReport(callMcpToolSafe(endpoint, timeout,
-                McpConstants.Tools.ASYNC_PROFILER_GET_JFR_REPORT, podName, alert,
-                LogMessages.Mcp.MCP_ASYNC_PROFILER_JFR_REPORT));
+        // ── Phase 1: pod-scoped tools ──────────────────────────────────────────
 
-        builder.flameGraph(callMcpToolSafe(endpoint, timeout,
-                McpConstants.Tools.ASYNC_PROFILER_GET_FLAME_GRAPH, podName, alert,
-                LogMessages.Mcp.MCP_ASYNC_PROFILER_FLAME_GRAPH));
+        // 1. list_profiled_pods — namespace optional
+        String profiledPodsText = null;
+        String latestRecordingId = null;
+        try {
+            String sessionId = initializeMcpSession(endpoint, timeout);
+            ObjectNode arguments = objectMapper.createObjectNode();
+            if (namespace != null && !namespace.isBlank()) {
+                arguments.put(McpConstants.Arguments.NAMESPACE, namespace);
+            }
+            JsonNode result = callMcpTool(endpoint, sessionId,
+                    McpConstants.Tools.ASYNC_PROFILER_LIST_PROFILED_PODS, arguments, timeout);
+            profiledPodsText = extractTextFromContent(result);
+            latestRecordingId = extractLatestRecordingId(result, podName);
+            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_LIST_PROFILED_PODS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .log();
+        } catch (Exception e) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_LIST_PROFILED_PODS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+        }
+        builder.profiledPods(profiledPodsText);
+
+        // 2. get_pod_jvm_status — pod_name required, namespace optional
+        try {
+            String sessionId = initializeMcpSession(endpoint, timeout);
+            ObjectNode arguments = objectMapper.createObjectNode();
+            arguments.put(McpConstants.Arguments.POD_NAME, podName);
+            if (namespace != null && !namespace.isBlank()) {
+                arguments.put(McpConstants.Arguments.NAMESPACE, namespace);
+            }
+            JsonNode result = callMcpTool(endpoint, sessionId,
+                    McpConstants.Tools.ASYNC_PROFILER_GET_POD_JVM_STATUS, arguments, timeout);
+            builder.podJvmStatus(extractTextFromContent(result));
+            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_POD_JVM_STATUS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .log();
+        } catch (Exception e) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_POD_JVM_STATUS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+        }
+
+        // 3. get_jvm_statistics — pod_name only
+        builder.jvmStatistics(callMcpToolSafe(endpoint, timeout,
+                McpConstants.Tools.ASYNC_PROFILER_GET_JVM_STATISTICS, podName, alert,
+                LogMessages.Mcp.MCP_ASYNC_PROFILER_JVM_STATISTICS));
+
+        // ── Phase 2: recording-scoped tools (skip if no recording_id found) ────
+        if (latestRecordingId == null || latestRecordingId.isBlank()) {
+            log.info(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, "No latestRecordingId found — skipping recording tools")
+                .log();
+            return;
+        }
+
+        // 4. get_recording — recording_id required
+        try {
+            String sessionId = initializeMcpSession(endpoint, timeout);
+            ObjectNode arguments = objectMapper.createObjectNode();
+            arguments.put(McpConstants.Arguments.RECORDING_ID, latestRecordingId);
+            JsonNode result = callMcpTool(endpoint, sessionId,
+                    McpConstants.Tools.ASYNC_PROFILER_GET_RECORDING, arguments, timeout);
+            builder.recordingStatus(extractTextFromContent(result));
+            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_RECORDING_STATUS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .log();
+        } catch (Exception e) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_RECORDING)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+        }
+
+        // 5. get_recording_report — recording_id required
+        try {
+            String sessionId = initializeMcpSession(endpoint, timeout);
+            ObjectNode arguments = objectMapper.createObjectNode();
+            arguments.put(McpConstants.Arguments.RECORDING_ID, latestRecordingId);
+            JsonNode result = callMcpTool(endpoint, sessionId,
+                    McpConstants.Tools.ASYNC_PROFILER_GET_RECORDING_REPORT, arguments, timeout);
+            builder.recordingReport(extractTextFromContent(result));
+            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_RECORDING_REPORT)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .log();
+        } catch (Exception e) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_RECORDING_REPORT)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+        }
+
+        // 6. get_flame_graph — recording_id + format:"json"
+        try {
+            String sessionId = initializeMcpSession(endpoint, timeout);
+            ObjectNode arguments = objectMapper.createObjectNode();
+            arguments.put(McpConstants.Arguments.RECORDING_ID, latestRecordingId);
+            arguments.put(McpConstants.Arguments.FORMAT, McpConstants.Arguments.FORMAT_JSON);
+            JsonNode result = callMcpTool(endpoint, sessionId,
+                    McpConstants.Tools.ASYNC_PROFILER_GET_FLAME_GRAPH, arguments, timeout);
+            builder.flameGraph(extractTextFromContent(result));
+            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_FLAME_GRAPH)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .log();
+        } catch (Exception e) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_FLAME_GRAPH)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+        }
+    }
+
+    /**
+     * Extracts the {@code latestRecordingId} for a specific pod from the
+     * {@code list_profiled_pods} JSON-RPC result.
+     *
+     * <p>The result node is the MCP content envelope ({@code content[0].text}).
+     * The text value is a JSON array of pod objects. This method:
+     * <ol>
+     *   <li>Extracts the text string from {@code content[0].text}</li>
+     *   <li>Parses it as a JSON array</li>
+     *   <li>Returns the {@code latestRecordingId} of the first pod whose
+     *       {@code podName} matches the alerting pod name</li>
+     *   <li>Falls back to the first pod's {@code latestRecordingId} if no
+     *       exact name match is found (handles dummy server fixed pod names)</li>
+     * </ol>
+     *
+     * @param result   the JSON-RPC result node from list_profiled_pods
+     * @param podName  the pod name to match
+     * @return the latestRecordingId string, or null if not found
+     */
+    private String extractLatestRecordingId(JsonNode result, String podName) {
+        if (result == null || podName == null) {
+            return null;
+        }
+        try {
+            // Unwrap MCP content envelope: result → content[0].text → JSON array string
+            String arrayText = null;
+            if (result.has(McpConstants.JsonRpc.FIELD_CONTENT)) {
+                JsonNode content = result.get(McpConstants.JsonRpc.FIELD_CONTENT);
+                if (content.isArray() && content.size() > 0) {
+                    JsonNode first = content.get(0);
+                    if (first.has(McpConstants.JsonRpc.FIELD_TEXT)) {
+                        arrayText = first.get(McpConstants.JsonRpc.FIELD_TEXT).asText();
+                    }
+                }
+            }
+
+            JsonNode arrayNode = (arrayText != null)
+                    ? objectMapper.readTree(arrayText)
+                    : result;
+
+            if (arrayNode == null || !arrayNode.isArray()) {
+                return null;
+            }
+
+            // 1st pass: exact pod name match
+            for (JsonNode pod : arrayNode) {
+                JsonNode podNameNode = pod.get("podName");
+                JsonNode recordingIdNode = pod.get("latestRecordingId");
+                if (podNameNode != null && podName.equals(podNameNode.asText())
+                        && recordingIdNode != null && !recordingIdNode.isNull()) {
+                    return recordingIdNode.asText();
+                }
+            }
+
+            // 2nd pass: fallback — return first pod's latestRecordingId if present
+            // (covers dummy servers that return a fixed pod name)
+            for (JsonNode pod : arrayNode) {
+                JsonNode recordingIdNode = pod.get("latestRecordingId");
+                if (recordingIdNode != null && !recordingIdNode.isNull()
+                        && !recordingIdNode.asText().isBlank()) {
+                    return recordingIdNode.asText();
+                }
+            }
+
+        } catch (Exception e) {
+            log.debug("Could not extract latestRecordingId from list_profiled_pods response")
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+        }
+        return null;
     }
 
     /**

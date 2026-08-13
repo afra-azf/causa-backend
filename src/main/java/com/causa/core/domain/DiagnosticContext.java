@@ -45,7 +45,11 @@ public final class DiagnosticContext {
     private final String containerAnalysis;
 
     // Async Profiler MCP context (cluster)
-    private final String jfrReport;
+    private final String profiledPods;
+    private final String podJvmStatus;
+    private final String jvmStatistics;
+    private final String recordingStatus;
+    private final String recordingReport;
     private final String flameGraph;
 
     // Quarkus MCP context (cluster)
@@ -80,8 +84,12 @@ public final class DiagnosticContext {
         this.threadAnalysis = builder.threadAnalysis;
         this.exceptionAnalysis = builder.exceptionAnalysis;
         this.containerAnalysis = builder.containerAnalysis;
-        this.jfrReport = builder.jfrReport;
-        this.flameGraph = builder.flameGraph;
+        this.profiledPods    = builder.profiledPods;
+        this.podJvmStatus    = builder.podJvmStatus;
+        this.jvmStatistics   = builder.jvmStatistics;
+        this.recordingStatus = builder.recordingStatus;
+        this.recordingReport = builder.recordingReport;
+        this.flameGraph      = builder.flameGraph;
         this.quarkusRawMetrics = builder.quarkusRawMetrics;
         this.libertyLogs = builder.libertyLogs;
         this.heapStatus = builder.heapStatus;
@@ -159,8 +167,24 @@ public final class DiagnosticContext {
         return containerAnalysis;
     }
 
-    public String getJfrReport() {
-        return jfrReport;
+    public String getProfiledPods() {
+        return profiledPods;
+    }
+
+    public String getPodJvmStatus() {
+        return podJvmStatus;
+    }
+
+    public String getJvmStatistics() {
+        return jvmStatistics;
+    }
+
+    public String getRecordingStatus() {
+        return recordingStatus;
+    }
+
+    public String getRecordingReport() {
+        return recordingReport;
     }
 
     public String getFlameGraph() {
@@ -240,7 +264,12 @@ public final class DiagnosticContext {
      * @return true if JFR report or flame graph are present
      */
     public boolean hasAsyncProfilerContext() {
-        return isNotBlank(jfrReport) || isNotBlank(flameGraph);
+        return isNotBlank(profiledPods)
+            || isNotBlank(podJvmStatus)
+            || isNotBlank(jvmStatistics)
+            || isNotBlank(recordingStatus)
+            || isNotBlank(recordingReport)
+            || isNotBlank(flameGraph);
     }
 
     /**
@@ -343,8 +372,12 @@ public final class DiagnosticContext {
         appendSection(sb, ContextConstants.SECTION_CONTAINER_ANALYSIS, containerAnalysis);
 
         // Async Profiler context
-        appendSection(sb, ContextConstants.SECTION_JFR_REPORT, jfrReport);
-        appendSection(sb, ContextConstants.SECTION_FLAME_GRAPH, flameGraph);
+        appendSection(sb, ContextConstants.SECTION_PROFILED_PODS,    profiledPods);
+        appendSection(sb, ContextConstants.SECTION_POD_JVM_STATUS,   podJvmStatus);
+        appendSection(sb, ContextConstants.SECTION_JVM_STATISTICS,   jvmStatistics);
+        appendSection(sb, ContextConstants.SECTION_RECORDING_STATUS, recordingStatus);
+        appendSection(sb, ContextConstants.SECTION_RECORDING_REPORT, recordingReport);
+        appendSection(sb, ContextConstants.SECTION_FLAME_GRAPH,      flameGraph);
 
         // Quarkus context
         appendSection(sb, ContextConstants.SECTION_QUARKUS_RAW_METRICS, quarkusRawMetrics);
@@ -419,7 +452,11 @@ public final class DiagnosticContext {
         private String threadAnalysis;
         private String exceptionAnalysis;
         private String containerAnalysis;
-        private String jfrReport;
+        private String profiledPods;
+        private String podJvmStatus;
+        private String jvmStatistics;
+        private String recordingStatus;
+        private String recordingReport;
         private String flameGraph;
         private String quarkusRawMetrics;
         private String libertyLogs;
@@ -515,8 +552,28 @@ public final class DiagnosticContext {
 
         // Cluster — Async Profiler MCP
 
-        public Builder jfrReport(String jfrReport) {
-            this.jfrReport = jfrReport;
+        public Builder profiledPods(String profiledPods) {
+            this.profiledPods = profiledPods;
+            return this;
+        }
+
+        public Builder podJvmStatus(String podJvmStatus) {
+            this.podJvmStatus = podJvmStatus;
+            return this;
+        }
+
+        public Builder jvmStatistics(String jvmStatistics) {
+            this.jvmStatistics = jvmStatistics;
+            return this;
+        }
+
+        public Builder recordingStatus(String recordingStatus) {
+            this.recordingStatus = recordingStatus;
+            return this;
+        }
+
+        public Builder recordingReport(String recordingReport) {
+            this.recordingReport = recordingReport;
             return this;
         }
 

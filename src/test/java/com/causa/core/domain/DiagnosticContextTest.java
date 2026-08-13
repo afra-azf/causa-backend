@@ -24,6 +24,19 @@ class DiagnosticContextTest {
             .build();
     }
 
+    static DiagnosticContext asyncProfilerCtx() {
+        return DiagnosticContext.builder()
+            .platform(DiagnosticContext.PLATFORM_CLUSTER)
+            .workloadName("my-app")
+            .profiledPods("[{\"podName\":\"my-app-pod\",\"profilerStatus\":\"READY\"}]")
+            .podJvmStatus("{\"profilerStatus\":\"READY\",\"jvmHealth\":{\"isHealthy\":true}}")
+            .jvmStatistics("{\"heapUsagePercent\":72.5,\"threadCount\":42}")
+            .recordingStatus("{\"status\":\"READY\",\"recordingId\":\"rec-abc123\"}")
+            .recordingReport("{\"summary\":{\"topHotspot\":\"com.example.Service.process\"}}")
+            .flameGraph("{\"frames\":[{\"signature\":\"java.lang.Thread.run\",\"samples\":1000}]}")
+            .build();
+    }
+
     static DiagnosticContext vmCtx() {
         return DiagnosticContext.builder()
             .platform(DiagnosticContext.PLATFORM_VM)
@@ -35,12 +48,22 @@ class DiagnosticContextTest {
 
     @Nested @DisplayName("hasXxxContext() Tests")
     class ContextPresenceTests {
-        @Test void hasKubernetesContext_true()  { assertThat(clusterCtx().hasKubernetesContext()).isTrue(); }
-        @Test void hasKruizeContext_true()       { assertThat(clusterCtx().hasKruizeContext()).isTrue(); }
-        @Test void hasCryostatContext_true()     { assertThat(clusterCtx().hasCryostatContext()).isTrue(); }
-        @Test void hasFilesystemContext_true()   { assertThat(vmCtx().hasFilesystemContext()).isTrue(); }
-        @Test void hasJmxContext_true()          { assertThat(vmCtx().hasJmxContext()).isTrue(); }
-        @Test void hasAnyContext_true()          { assertThat(clusterCtx().hasAnyContext()).isTrue(); }
+        @Test void hasKubernetesContext_true()    { assertThat(clusterCtx().hasKubernetesContext()).isTrue(); }
+        @Test void hasKruizeContext_true()         { assertThat(clusterCtx().hasKruizeContext()).isTrue(); }
+        @Test void hasCryostatContext_true()       { assertThat(clusterCtx().hasCryostatContext()).isTrue(); }
+        @Test void hasFilesystemContext_true()     { assertThat(vmCtx().hasFilesystemContext()).isTrue(); }
+        @Test void hasJmxContext_true()            { assertThat(vmCtx().hasJmxContext()).isTrue(); }
+        @Test void hasAsyncProfilerContext_true()  { assertThat(asyncProfilerCtx().hasAsyncProfilerContext()).isTrue(); }
+        @Test void hasAnyContext_true()            { assertThat(clusterCtx().hasAnyContext()).isTrue(); }
+        @Test void hasAsyncProfilerContext_anyField_true() {
+            // hasAsyncProfilerContext returns true if ANY of the 6 fields is set
+            assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w")
+                .jvmStatistics("heap data").build().hasAsyncProfilerContext()).isTrue();
+        }
+        @Test void hasAsyncProfilerContext_false() {
+            assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w").build()
+                .hasAsyncProfilerContext()).isFalse();
+        }
         @Test void hasKubernetesContext_false() {
             assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w").build()
                 .hasKubernetesContext()).isFalse();
@@ -77,6 +100,16 @@ class DiagnosticContextTest {
             assertThat(ctx.getPodStatus()).isEqualTo("Running");
             assertThat(ctx.getCostRecommendations()).isEqualTo("reduce cpu");
             assertThat(ctx.getGcAnalysis()).isEqualTo("GC data");
+        }
+
+        @Test void asyncProfilerGettersReturnExpectedValues() {
+            DiagnosticContext ctx = asyncProfilerCtx();
+            assertThat(ctx.getProfiledPods()).contains("READY");
+            assertThat(ctx.getPodJvmStatus()).contains("isHealthy");
+            assertThat(ctx.getJvmStatistics()).contains("72.5");
+            assertThat(ctx.getRecordingStatus()).contains("rec-abc123");
+            assertThat(ctx.getRecordingReport()).contains("topHotspot");
+            assertThat(ctx.getFlameGraph()).contains("java.lang.Thread.run");
         }
     }
 
