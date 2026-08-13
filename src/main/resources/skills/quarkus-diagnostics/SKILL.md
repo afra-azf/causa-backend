@@ -148,7 +148,7 @@ Unusual — the process is using a disproportionate share of total CPU. Combined
 ### 1. Compute heap utilisation first
 - Calculate `jvm_memory_used_bytes{id="G1 Old Gen"}` / `jvm_memory_max_bytes{id="G1 Old Gen"}`
 - If max is −1, use `jvm_gc_max_data_size_bytes` as the denominator
-- Thresholds: < 70% normal, 70–85% elevated, > 85% high pressure, > 95% critical
+- Corroborate elevated utilisation with `jvm_gc_overhead`, Cryostat JFR MEMORY ANALYSIS, and POD EVENTS for `OOMKilling`
 
 ### 2. Check GC overhead
 - `jvm_gc_overhead = 0.0` — no current GC pressure (may have recovered before snapshot)

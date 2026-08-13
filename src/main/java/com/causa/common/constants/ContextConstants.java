@@ -42,8 +42,12 @@ public final class ContextConstants {
     public static final String SECTION_LIBERTY_LOGS = "LIBERTY APPLICATION LOGS (Filesystem MCP)";
 
     // Async Profiler MCP section headers
-    public static final String SECTION_JFR_REPORT    = "JFR REPORT (Async Profiler MCP)";
-    public static final String SECTION_FLAME_GRAPH   = "FLAME GRAPH (Async Profiler MCP)";
+    public static final String SECTION_PROFILED_PODS    = "PROFILED PODS (Async Profiler MCP)";
+    public static final String SECTION_POD_JVM_STATUS   = "POD JVM STATUS (Async Profiler MCP)";
+    public static final String SECTION_JVM_STATISTICS   = "JVM STATISTICS (Async Profiler MCP)";
+    public static final String SECTION_RECORDING_STATUS = "RECORDING STATUS (Async Profiler MCP)";
+    public static final String SECTION_RECORDING_REPORT = "RECORDING REPORT (Async Profiler MCP)";
+    public static final String SECTION_FLAME_GRAPH      = "FLAME GRAPH (Async Profiler MCP)";
 
     // Quarkus MCP section headers
     public static final String SECTION_QUARKUS_RAW_METRICS = "QUARKUS RAW METRICS (Quarkus MCP)";

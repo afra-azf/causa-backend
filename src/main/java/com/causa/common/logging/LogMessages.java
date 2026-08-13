@@ -209,8 +209,12 @@ public final class LogMessages {
         public static final String MCP_KRUIZE_SKIPPED_NO_CONTAINER = "Skipping Kruize MCP calls - no container name available";
 
         // Async Profiler MCP
-        public static final String MCP_ASYNC_PROFILER_JFR_REPORT  = "Async Profiler JFR report retrieved";
-        public static final String MCP_ASYNC_PROFILER_FLAME_GRAPH  = "Async Profiler flame graph retrieved";
+        public static final String MCP_ASYNC_PROFILER_LIST_PROFILED_PODS   = "Async Profiler profiled pods list retrieved";
+        public static final String MCP_ASYNC_PROFILER_POD_JVM_STATUS       = "Async Profiler pod JVM status retrieved";
+        public static final String MCP_ASYNC_PROFILER_JVM_STATISTICS       = "Async Profiler JVM statistics retrieved";
+        public static final String MCP_ASYNC_PROFILER_RECORDING_STATUS     = "Async Profiler recording status retrieved";
+        public static final String MCP_ASYNC_PROFILER_RECORDING_REPORT     = "Async Profiler recording report retrieved";
+        public static final String MCP_ASYNC_PROFILER_FLAME_GRAPH          = "Async Profiler flame graph retrieved";
 
         // Quarkus MCP
         public static final String MCP_QUARKUS_RAW_METRICS = "Quarkus raw metrics retrieved";

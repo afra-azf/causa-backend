@@ -64,6 +64,16 @@ vertex-ai-anthropic:
       - `worker_pool_active` / `worker_pool_idle{pool_name="vert.x-worker-thread"}` — Vert.x worker thread pool saturation
     - **Note**: If section is missing or `"No Data Available"`, note in `llm_notes` and omit Quarkus evidence from scoring.
 
+    ### 8. ASYNC_PROFILER (Async Profiler MCP)
+    Six sections collected from the async-profiler sidecar MCP server:
+    - **8a. PROFILED PODS**: List of pods with profiler sidecar — each entry has `podName`, `profilerStatus` (`READY`/`NOT_READY`/`UNKNOWN`), `jvmVersion`, `latestRecordingId`
+    - **8b. POD JVM STATUS**: Sidecar and JVM health — `profilerStatus`, `jvmHealth.isHealthy`, `jvmHealth.jvmUptime`, `jvmHealth.activeThreadCount`, `latestRecording`
+    - **8c. JVM STATISTICS**: Live JVM snapshot — `heapUsagePercent` (0.0–100.0), `heapUsedBytes`, `heapMaxBytes`, `nonHeapUsedBytes`, `threadCount`, `peakThreadCount`, `gcCollectionCount`, `gcCollectionTimeMs`, `loadedClassCount`
+    - **8d. RECORDING STATUS**: Recording lifecycle state — `status` one of `QUEUED → RECORDING → DOWNLOADING → ANALYSING → READY → DELIVERED`; `terminationReason: CONTAINER_OOM` is strong OOM evidence
+    - **8e. RECORDING REPORT**: Structured profiling analysis (only when status `READY`/`DELIVERED`) — `summary` (cpuUsagePercent, heapUsagePercent, gcEventCount, topHotspot, observations), `cpu` top-5 hotspot methods with samplePercent, `memory` top-5 allocation sites with allocatedBytes, `gc` (totalPauseTimeMs, avgPauseMs, maxPauseMs), `threads` (runnable/blocked/waiting counts), `locks` (contention entries), `jvm` (GC policy, heap config)
+    - **8f. FLAME GRAPH**: Nested JSON call-stack frames — each frame has `signature`, `samples`, `percent`, `children`; wide frames = CPU hotspots; GC frames > 10% of samples corroborates `POSSIBLE_GC_PAUSE`
+    - **Note**: If all sections are `"No Data Available"`, async-profiler sidecar is not deployed or pod was terminated before profiling; note in `llm_notes` and rely on Cryostat and Kubernetes signals only.
+
     ## AVAILABLE CONTEXT DATA
 
     {{context}}
@@ -343,6 +353,16 @@ direct-anthropic:
       - `worker_pool_active` / `worker_pool_idle{pool_name="vert.x-worker-thread"}` — Vert.x worker thread pool saturation
     - **Note**: If section is missing or `"No Data Available"`, note in `llm_notes` and omit Quarkus evidence from scoring.
 
+    ### 8. ASYNC_PROFILER (Async Profiler MCP)
+    Six sections collected from the async-profiler sidecar MCP server:
+    - **8a. PROFILED PODS**: List of pods with profiler sidecar — each entry has `podName`, `profilerStatus` (`READY`/`NOT_READY`/`UNKNOWN`), `jvmVersion`, `latestRecordingId`
+    - **8b. POD JVM STATUS**: Sidecar and JVM health — `profilerStatus`, `jvmHealth.isHealthy`, `jvmHealth.jvmUptime`, `jvmHealth.activeThreadCount`, `latestRecording`
+    - **8c. JVM STATISTICS**: Live JVM snapshot — `heapUsagePercent` (0.0–100.0), `heapUsedBytes`, `heapMaxBytes`, `nonHeapUsedBytes`, `threadCount`, `peakThreadCount`, `gcCollectionCount`, `gcCollectionTimeMs`, `loadedClassCount`
+    - **8d. RECORDING STATUS**: Recording lifecycle state — `status` one of `QUEUED → RECORDING → DOWNLOADING → ANALYSING → READY → DELIVERED`; `terminationReason: CONTAINER_OOM` is strong OOM evidence
+    - **8e. RECORDING REPORT**: Structured profiling analysis (only when status `READY`/`DELIVERED`) — `summary` (cpuUsagePercent, heapUsagePercent, gcEventCount, topHotspot, observations), `cpu` top-5 hotspot methods with samplePercent, `memory` top-5 allocation sites with allocatedBytes, `gc` (totalPauseTimeMs, avgPauseMs, maxPauseMs), `threads` (runnable/blocked/waiting counts), `locks` (contention entries), `jvm` (GC policy, heap config)
+    - **8f. FLAME GRAPH**: Nested JSON call-stack frames — each frame has `signature`, `samples`, `percent`, `children`; wide frames = CPU hotspots; GC frames > 10% of samples corroborates `POSSIBLE_GC_PAUSE`
+    - **Note**: If all sections are `"No Data Available"`, async-profiler sidecar is not deployed or pod was terminated before profiling; note in `llm_notes` and rely on Cryostat and Kubernetes signals only.
+
     ## AVAILABLE CONTEXT DATA
 
     {{context}}
@@ -621,6 +641,16 @@ bob:
       - `system_cpu_usage` — host CPU utilisation; compare with process to assess contention
       - `worker_pool_active` / `worker_pool_idle{pool_name="vert.x-worker-thread"}` — Vert.x worker thread pool saturation
     - **Note**: If section is missing or `"No Data Available"`, note in `llm_notes` and omit Quarkus evidence from scoring.
+
+    ### 8. ASYNC_PROFILER (Async Profiler MCP)
+    Six sections collected from the async-profiler sidecar MCP server:
+    - **8a. PROFILED PODS**: List of pods with profiler sidecar — each entry has `podName`, `profilerStatus` (`READY`/`NOT_READY`/`UNKNOWN`), `jvmVersion`, `latestRecordingId`
+    - **8b. POD JVM STATUS**: Sidecar and JVM health — `profilerStatus`, `jvmHealth.isHealthy`, `jvmHealth.jvmUptime`, `jvmHealth.activeThreadCount`, `latestRecording`
+    - **8c. JVM STATISTICS**: Live JVM snapshot — `heapUsagePercent` (0.0–100.0), `heapUsedBytes`, `heapMaxBytes`, `nonHeapUsedBytes`, `threadCount`, `peakThreadCount`, `gcCollectionCount`, `gcCollectionTimeMs`, `loadedClassCount`
+    - **8d. RECORDING STATUS**: Recording lifecycle state — `status` one of `QUEUED → RECORDING → DOWNLOADING → ANALYSING → READY → DELIVERED`; `terminationReason: CONTAINER_OOM` is strong OOM evidence
+    - **8e. RECORDING REPORT**: Structured profiling analysis (only when status `READY`/`DELIVERED`) — `summary` (cpuUsagePercent, heapUsagePercent, gcEventCount, topHotspot, observations), `cpu` top-5 hotspot methods with samplePercent, `memory` top-5 allocation sites with allocatedBytes, `gc` (totalPauseTimeMs, avgPauseMs, maxPauseMs), `threads` (runnable/blocked/waiting counts), `locks` (contention entries), `jvm` (GC policy, heap config)
+    - **8f. FLAME GRAPH**: Nested JSON call-stack frames — each frame has `signature`, `samples`, `percent`, `children`; wide frames = CPU hotspots; GC frames > 10% of samples corroborates `POSSIBLE_GC_PAUSE`
+    - **Note**: If all sections are `"No Data Available"`, async-profiler sidecar is not deployed or pod was terminated before profiling; note in `llm_notes` and rely on Cryostat and Kubernetes signals only.
 
     ## AVAILABLE CONTEXT DATA
 

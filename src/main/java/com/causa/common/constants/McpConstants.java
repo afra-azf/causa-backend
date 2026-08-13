@@ -81,8 +81,12 @@ public final class McpConstants {
         public static final String KRUIZE_GET_PERF_RECOMMENDATIONS = "getPerformanceOptimizedRecommendations";
 
         // Async Profiler MCP tools
-        public static final String ASYNC_PROFILER_GET_JFR_REPORT  = "get_jfr_report";
-        public static final String ASYNC_PROFILER_GET_FLAME_GRAPH  = "get_flame_graph";
+        public static final String ASYNC_PROFILER_LIST_PROFILED_PODS    = "list_profiled_pods";
+        public static final String ASYNC_PROFILER_GET_POD_JVM_STATUS    = "get_pod_jvm_status";
+        public static final String ASYNC_PROFILER_GET_JVM_STATISTICS    = "get_jvm_statistics";
+        public static final String ASYNC_PROFILER_GET_RECORDING         = "get_recording";
+        public static final String ASYNC_PROFILER_GET_RECORDING_REPORT  = "get_recording_report";
+        public static final String ASYNC_PROFILER_GET_FLAME_GRAPH       = "get_flame_graph";
 
         // Quarkus MCP tools
         public static final String QUARKUS_FETCH_RAW_METRICS = "fetch_raw_metrics_from_endpoint";
@@ -141,6 +145,11 @@ public final class McpConstants {
 
         // Kruize arguments
         public static final String CONTAINER_NAME = "containerName";
+
+        // Async Profiler / recording arguments
+        public static final String RECORDING_ID   = "recording_id";
+        public static final String FORMAT         = "format";
+        public static final String FORMAT_JSON    = "json";
 
         // Cryostat arguments
         public static final String POD_NAME = "pod_name";

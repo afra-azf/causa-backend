@@ -105,6 +105,8 @@ class McpContextCollectorTest {
             assertThat(ctx.hasKubernetesContext()).isFalse();
             assertThat(ctx.hasKruizeContext()).isFalse();
             assertThat(ctx.hasCryostatContext()).isFalse();
+            assertThat(ctx.hasAsyncProfilerContext()).isFalse();
+            assertThat(ctx.hasQuarkusContext()).isFalse();
         }
 
         @Test
