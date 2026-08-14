@@ -1282,19 +1282,48 @@ public class McpContextCollector {
     }
 
     /**
-     * Collects Quarkus MCP context (metrics snapshot and health status).
+     * Collects Quarkus MCP context (raw metrics snapshot).
+     *
+     * <p>Calls {@code fetch_raw_metrics_from_endpoint} with {@code baseUrl} — the base URL
+     * of the monitored Quarkus application. The MCP server appends {@code /q/metrics} and
+     * scrapes it directly (Direct Scrape path per the server's three-tier fallback).
+     *
+     * <p>If {@code metricsBaseUrl} is not configured, the call is skipped with a warning.
      *
      * @param builder the context builder to populate
      * @param alert the alert
      */
     private void collectQuarkusContext(DiagnosticContext.Builder builder, Alert alert) {
+        String metricsBaseUrl = mcpConfig.quarkus().metricsBaseUrl();
+        if (metricsBaseUrl == null || metricsBaseUrl.isBlank()) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, "CAUSA_MCP_QUARKUS_METRICS_BASE_URL is not configured — skipping Quarkus metrics collection")
+                .log();
+            return;
+        }
+
         String endpoint = mcpConfig.quarkus().endpoint() + McpConstants.Paths.MCP_ENDPOINT;
         int timeout = mcpConfig.quarkus().timeoutMs();
-        String podName = alert.getWorkloadInfo().podName();
 
-        builder.quarkusRawMetrics(callMcpToolSafe(endpoint, timeout,
-                McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS, podName, alert,
-                LogMessages.Mcp.MCP_QUARKUS_RAW_METRICS));
+        try {
+            String sessionId = initializeMcpSession(endpoint, timeout);
+            ObjectNode arguments = objectMapper.createObjectNode();
+            arguments.put(McpConstants.Arguments.BASE_URL, metricsBaseUrl);
+            JsonNode result = callMcpTool(endpoint, sessionId,
+                    McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS, arguments, timeout);
+            builder.quarkusRawMetrics(extractTextFromContent(result));
+            log.info(LogMessages.Mcp.MCP_QUARKUS_RAW_METRICS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .log();
+        } catch (Exception e) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+        }
     }
 
     /**

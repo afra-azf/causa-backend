@@ -80,6 +80,7 @@ class McpContextCollectorTest {
             when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
             when(quarkusConfig.endpoint()).thenReturn("http://192.0.2.1");
             when(quarkusConfig.timeoutMs()).thenReturn(1);
+            when(quarkusConfig.metricsBaseUrl()).thenReturn("http://192.0.2.1:8080");
 
             collector = new McpContextCollector(mcpConfig, libertyLogsContextCollector, "cluster");
         }
@@ -220,6 +221,7 @@ class McpContextCollectorTest {
             when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
             when(quarkusConfig.endpoint()).thenReturn("http://192.0.2.1");
             when(quarkusConfig.timeoutMs()).thenReturn(1);
+            when(quarkusConfig.metricsBaseUrl()).thenReturn("http://192.0.2.1:8080");
 
             McpContextCollector c = new McpContextCollector(mcpConfig, libertyLogsContextCollector, null);
             DiagnosticContext ctx = c.collectContext(buildAlert());

@@ -151,8 +151,11 @@ public final class McpConstants {
         public static final String FORMAT         = "format";
         public static final String FORMAT_JSON    = "json";
 
-        // Cryostat arguments
+        // Cryostat / Async Profiler arguments
         public static final String POD_NAME = "pod_name";
+
+        // Quarkus MCP arguments
+        public static final String BASE_URL = "baseUrl";
 
         // Filesystem arguments
         public static final String PATH = "path";
