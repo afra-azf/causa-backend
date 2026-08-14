@@ -76,6 +76,9 @@ data:
 
   # MCP Quarkus Configuration (metrics snapshot + health status)
   # Placeholder URL — update to Kind service URL when real server is deployed
-  CAUSA_MCP_QUARKUS_ENDPOINT: "http://localhost:8092"
+  CAUSA_MCP_QUARKUS_ENDPOINT: "http://mcp-metrics.default.svc.cluster.local:8080"
   CAUSA_MCP_QUARKUS_HEALTH_PATH: "/healthz"
   CAUSA_MCP_QUARKUS_TIMEOUT: "10000"
+  # Base URL of the Quarkus app to scrape — passed as baseUrl to fetch_raw_metrics_from_endpoint
+  # The MCP server appends /q/metrics to this URL. Update per environment.
+  CAUSA_MCP_QUARKUS_METRICS_BASE_URL: "http://kruize-optimizer.openshift-tuning.svc.cluster.local:8080"
