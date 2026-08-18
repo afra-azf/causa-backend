@@ -67,9 +67,6 @@ public class HealthCheckService {
     private final String mcpFilesystemEndpoint;
     private final String mcpFilesystemHealthPath;
     private final int mcpFilesystemTimeout;
-    private final String mcpAsyncProfilerEndpoint;
-    private final String mcpAsyncProfilerHealthPath;
-    private final int mcpAsyncProfilerTimeout;
     private final String mcpQuarkusEndpoint;
     private final String mcpQuarkusHealthPath;
     private final int mcpQuarkusTimeout;
@@ -94,9 +91,6 @@ public class HealthCheckService {
             @ConfigProperty(name = "causa.mcp.filesystem.endpoint") String mcpFilesystemEndpoint,
             @ConfigProperty(name = "causa.mcp.filesystem.health-path") String mcpFilesystemHealthPath,
             @ConfigProperty(name = "causa.mcp.filesystem.timeout-ms") int mcpFilesystemTimeout,
-            @ConfigProperty(name = "causa.mcp.async-profiler.endpoint") String mcpAsyncProfilerEndpoint,
-            @ConfigProperty(name = "causa.mcp.async-profiler.health-path") String mcpAsyncProfilerHealthPath,
-            @ConfigProperty(name = "causa.mcp.async-profiler.timeout-ms") int mcpAsyncProfilerTimeout,
             @ConfigProperty(name = "causa.mcp.quarkus.endpoint") String mcpQuarkusEndpoint,
             @ConfigProperty(name = "causa.mcp.quarkus.health-path") String mcpQuarkusHealthPath,
             @ConfigProperty(name = "causa.mcp.quarkus.timeout-ms") int mcpQuarkusTimeout,
@@ -118,9 +112,6 @@ public class HealthCheckService {
         this.mcpFilesystemEndpoint = mcpFilesystemEndpoint;
         this.mcpFilesystemHealthPath = mcpFilesystemHealthPath;
         this.mcpFilesystemTimeout = mcpFilesystemTimeout;
-        this.mcpAsyncProfilerEndpoint = mcpAsyncProfilerEndpoint;
-        this.mcpAsyncProfilerHealthPath = mcpAsyncProfilerHealthPath;
-        this.mcpAsyncProfilerTimeout = mcpAsyncProfilerTimeout;
         this.mcpQuarkusEndpoint = mcpQuarkusEndpoint;
         this.mcpQuarkusHealthPath = mcpQuarkusHealthPath;
         this.mcpQuarkusTimeout = mcpQuarkusTimeout;
@@ -167,7 +158,6 @@ public class HealthCheckService {
         ComponentHealthDto mcpCryostatHealth = null;
         ComponentHealthDto mcpFilesystemHealth = null;
 
-        ComponentHealthDto mcpAsyncProfilerHealth = null;
         ComponentHealthDto mcpQuarkusHealth = null;
 
         if (PLATFORM_VM.equals(platform)) {
@@ -175,7 +165,7 @@ public class HealthCheckService {
             mcpFilesystemHealth = checkMcpFilesystemHealth();
             responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_FILESYSTEM, mcpFilesystemHealth);
         } else {
-            // Cluster mode: check Kubernetes, Kruize, Cryostat, Async Profiler, and Quarkus MCP servers
+            // Cluster mode: check Kubernetes, Kruize, Cryostat, and Quarkus MCP servers
             mcpK8sHealth = checkMcpKubernetesHealth();
             responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_KUBERNETES, mcpK8sHealth);
 
@@ -185,9 +175,6 @@ public class HealthCheckService {
             mcpCryostatHealth = checkMcpCryostatHealth();
             responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_CRYOSTAT, mcpCryostatHealth);
 
-            mcpAsyncProfilerHealth = checkMcpAsyncProfilerHealth();
-            responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_ASYNC_PROFILER, mcpAsyncProfilerHealth);
-
             mcpQuarkusHealth = checkMcpQuarkusHealth();
             responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_QUARKUS, mcpQuarkusHealth);
         }
@@ -195,7 +182,7 @@ public class HealthCheckService {
         // Determine overall system status
         AppConstants.HealthStatus overallStatus = determineOverallStatus(
             databaseHealth, mcpK8sHealth, llmHealth, mcpKruizeHealth, mcpCryostatHealth, mcpFilesystemHealth,
-            mcpAsyncProfilerHealth, mcpQuarkusHealth);
+            mcpQuarkusHealth);
         responseBuilder.status(overallStatus.getValue());
 
         HealthCheckResponseDto response = responseBuilder.build();
@@ -402,7 +389,6 @@ public class HealthCheckService {
             ComponentHealthDto mcpKruizeHealth,
             ComponentHealthDto mcpCryostatHealth,
             ComponentHealthDto mcpFilesystemHealth,
-            ComponentHealthDto mcpAsyncProfilerHealth,
             ComponentHealthDto mcpQuarkusHealth) {
 
         // Database is a critical component
@@ -421,8 +407,6 @@ public class HealthCheckService {
              !AppConstants.HealthStatus.UP.getValue().equals(mcpCryostatHealth.getStatus())) ||
             (mcpFilesystemHealth != null &&
              !AppConstants.HealthStatus.UP.getValue().equals(mcpFilesystemHealth.getStatus())) ||
-            (mcpAsyncProfilerHealth != null &&
-             !AppConstants.HealthStatus.UP.getValue().equals(mcpAsyncProfilerHealth.getStatus())) ||
             (mcpQuarkusHealth != null &&
              !AppConstants.HealthStatus.UP.getValue().equals(mcpQuarkusHealth.getStatus()))) {
             return AppConstants.HealthStatus.DEGRADED;
@@ -446,22 +430,6 @@ public class HealthCheckService {
                 mcpFilesystemTimeout,
                 LogMessages.HealthCheck.MCP_FILESYSTEM_CHECK_PASSED,
                 LogMessages.HealthCheck.MCP_FILESYSTEM_CHECK_FAILED);
-    }
-
-    /**
-     * Check MCP Async Profiler server health and measure latency.
-     *
-     * <p>Non-critical — if down, system reports DEGRADED, not DOWN.
-     *
-     * @return component health DTO with Async Profiler MCP status and latency
-     */
-    private ComponentHealthDto checkMcpAsyncProfilerHealth() {
-        log.debug(LogMessages.HealthCheck.MCP_ASYNC_PROFILER_CHECK_STARTED).log();
-        return checkMcpHttpHealth(
-                mcpAsyncProfilerEndpoint + mcpAsyncProfilerHealthPath,
-                mcpAsyncProfilerTimeout,
-                LogMessages.HealthCheck.MCP_ASYNC_PROFILER_CHECK_PASSED,
-                LogMessages.HealthCheck.MCP_ASYNC_PROFILER_CHECK_FAILED);
     }
 
     /**

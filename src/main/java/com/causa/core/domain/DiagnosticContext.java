@@ -263,15 +263,6 @@ public final class DiagnosticContext {
      *
      * @return true if JFR report or flame graph are present
      */
-    public boolean hasAsyncProfilerContext() {
-        return isNotBlank(profiledPods)
-            || isNotBlank(podJvmStatus)
-            || isNotBlank(jvmStatistics)
-            || isNotBlank(recordingStatus)
-            || isNotBlank(recordingReport)
-            || isNotBlank(flameGraph);
-    }
-
     /**
      * Checks if any Quarkus MCP context was collected.
      *
@@ -312,7 +303,7 @@ public final class DiagnosticContext {
      */
     public boolean hasAnyContext() {
         return hasKubernetesContext() || hasKruizeContext() || hasCryostatContext()
-            || hasAsyncProfilerContext() || hasQuarkusContext()
+            || hasQuarkusContext()
             || hasFilesystemContext() || hasJmxContext();
     }
 

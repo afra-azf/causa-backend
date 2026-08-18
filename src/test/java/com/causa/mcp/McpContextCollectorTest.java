@@ -29,7 +29,6 @@ class McpContextCollectorTest {
     @Mock McpConfig.KubernetesConfig k8sConfig;
     @Mock McpConfig.KruizeConfig kruizeConfig;
     @Mock McpConfig.CryostatConfig cryostatConfig;
-    @Mock McpConfig.AsyncProfilerConfig asyncProfilerConfig;
     @Mock McpConfig.QuarkusConfig quarkusConfig;
     @Mock McpConfig.JmxConfig jmxConfig;
     @Mock McpConfig.FilesystemConfig filesystemMcpConfig;
@@ -73,10 +72,6 @@ class McpContextCollectorTest {
             when(cryostatConfig.maxRetries()).thenReturn(0);
             when(cryostatConfig.retryDelayMs()).thenReturn(1);
 
-            when(mcpConfig.asyncProfiler()).thenReturn(asyncProfilerConfig);
-            when(asyncProfilerConfig.endpoint()).thenReturn("http://192.0.2.1");
-            when(asyncProfilerConfig.timeoutMs()).thenReturn(1);
-
             when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
             when(quarkusConfig.endpoint()).thenReturn("http://192.0.2.1");
             when(quarkusConfig.timeoutMs()).thenReturn(1);
@@ -106,7 +101,6 @@ class McpContextCollectorTest {
             assertThat(ctx.hasKubernetesContext()).isFalse();
             assertThat(ctx.hasKruizeContext()).isFalse();
             assertThat(ctx.hasCryostatContext()).isFalse();
-            assertThat(ctx.hasAsyncProfilerContext()).isFalse();
             assertThat(ctx.hasQuarkusContext()).isFalse();
         }
 
@@ -213,10 +207,6 @@ class McpContextCollectorTest {
             when(cryostatConfig.timeoutMs()).thenReturn(1);
             when(cryostatConfig.maxRetries()).thenReturn(0);
             when(cryostatConfig.retryDelayMs()).thenReturn(1);
-
-            when(mcpConfig.asyncProfiler()).thenReturn(asyncProfilerConfig);
-            when(asyncProfilerConfig.endpoint()).thenReturn("http://192.0.2.1");
-            when(asyncProfilerConfig.timeoutMs()).thenReturn(1);
 
             when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
             when(quarkusConfig.endpoint()).thenReturn("http://192.0.2.1");

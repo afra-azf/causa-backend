@@ -53,7 +53,6 @@ class DiagnosticContextTest {
         @Test void hasCryostatContext_true()       { assertThat(clusterCtx().hasCryostatContext()).isTrue(); }
         @Test void hasFilesystemContext_true()     { assertThat(vmCtx().hasFilesystemContext()).isTrue(); }
         @Test void hasJmxContext_true()            { assertThat(vmCtx().hasJmxContext()).isTrue(); }
-        @Test void hasAsyncProfilerContext_true()  { assertThat(asyncProfilerCtx().hasAsyncProfilerContext()).isTrue(); }
         @Test void hasQuarkusContext_true() {
             assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w")
                 .quarkusRawMetrics("{\"metric_count\":132}").build().hasQuarkusContext()).isTrue();
@@ -63,15 +62,6 @@ class DiagnosticContextTest {
                 .hasQuarkusContext()).isFalse();
         }
         @Test void hasAnyContext_true()            { assertThat(clusterCtx().hasAnyContext()).isTrue(); }
-        @Test void hasAsyncProfilerContext_anyField_true() {
-            // hasAsyncProfilerContext returns true if ANY of the 6 fields is set
-            assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w")
-                .jvmStatistics("heap data").build().hasAsyncProfilerContext()).isTrue();
-        }
-        @Test void hasAsyncProfilerContext_false() {
-            assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w").build()
-                .hasAsyncProfilerContext()).isFalse();
-        }
         @Test void hasKubernetesContext_false() {
             assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w").build()
                 .hasKubernetesContext()).isFalse();

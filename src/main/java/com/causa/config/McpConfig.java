@@ -48,14 +48,6 @@ public interface McpConfig {
     FilesystemConfig filesystem();
 
     /**
-     * Async Profiler MCP server configuration (cluster platform).
-     *
-     * @return the Async Profiler MCP config
-     */
-    @WithName("async-profiler")
-    AsyncProfilerConfig asyncProfiler();
-
-    /**
      * Quarkus MCP server configuration (cluster platform).
      *
      * @return the Quarkus MCP config
@@ -241,37 +233,6 @@ public interface McpConfig {
         @WithDefault("5")
         int alertWindowMinutes();
 
-    }
-
-    /**
-     * Async Profiler MCP Configuration (cluster platform)
-     */
-    interface AsyncProfilerConfig {
-        /**
-         * Async Profiler MCP server endpoint URL.
-         *
-         * @return the endpoint URL
-         */
-        @WithName("endpoint")
-        String endpoint();
-
-        /**
-         * Health check path for the Async Profiler MCP server.
-         *
-         * @return the health check path
-         */
-        @WithName("health-path")
-        @WithDefault("/healthz")
-        String healthPath();
-
-        /**
-         * HTTP request timeout in milliseconds.
-         *
-         * @return the timeout in ms
-         */
-        @WithName("timeout-ms")
-        @WithDefault("10000")
-        int timeoutMs();
     }
 
     /**

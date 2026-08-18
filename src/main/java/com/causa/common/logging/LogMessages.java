@@ -109,9 +109,6 @@ public final class LogMessages {
         public static final String MCP_FILESYSTEM_CHECK_STARTED = "MCP Filesystem health check started";
         public static final String MCP_FILESYSTEM_CHECK_PASSED = "MCP Filesystem health check passed";
         public static final String MCP_FILESYSTEM_CHECK_FAILED = "MCP Filesystem health check failed";
-        public static final String MCP_ASYNC_PROFILER_CHECK_STARTED = "MCP Async Profiler health check started";
-        public static final String MCP_ASYNC_PROFILER_CHECK_PASSED = "MCP Async Profiler health check passed";
-        public static final String MCP_ASYNC_PROFILER_CHECK_FAILED = "MCP Async Profiler health check failed";
         public static final String MCP_QUARKUS_CHECK_STARTED = "MCP Quarkus health check started";
         public static final String MCP_QUARKUS_CHECK_PASSED = "MCP Quarkus health check passed";
         public static final String MCP_QUARKUS_CHECK_FAILED = "MCP Quarkus health check failed";
@@ -207,14 +204,6 @@ public final class LogMessages {
         public static final String MCP_KRUIZE_COST_RECOMMENDATIONS = "Kruize cost recommendations retrieved";
         public static final String MCP_KRUIZE_PERF_RECOMMENDATIONS = "Kruize performance recommendations retrieved";
         public static final String MCP_KRUIZE_SKIPPED_NO_CONTAINER = "Skipping Kruize MCP calls - no container name available";
-
-        // Async Profiler MCP
-        public static final String MCP_ASYNC_PROFILER_LIST_PROFILED_PODS   = "Async Profiler profiled pods list retrieved";
-        public static final String MCP_ASYNC_PROFILER_POD_JVM_STATUS       = "Async Profiler pod JVM status retrieved";
-        public static final String MCP_ASYNC_PROFILER_JVM_STATISTICS       = "Async Profiler JVM statistics retrieved";
-        public static final String MCP_ASYNC_PROFILER_RECORDING_STATUS     = "Async Profiler recording status retrieved";
-        public static final String MCP_ASYNC_PROFILER_RECORDING_REPORT     = "Async Profiler recording report retrieved";
-        public static final String MCP_ASYNC_PROFILER_FLAME_GRAPH          = "Async Profiler flame graph retrieved";
 
         // Quarkus MCP
         public static final String MCP_QUARKUS_RAW_METRICS = "Quarkus raw metrics retrieved";

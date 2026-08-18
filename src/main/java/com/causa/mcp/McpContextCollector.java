@@ -140,11 +140,6 @@ public class McpContextCollector {
             collectCryostatContext(contextBuilder, alert);
         }
 
-        // Async Profiler context collection (requires pod name)
-        if (alert.getWorkloadInfo().podName() != null && !alert.getWorkloadInfo().podName().isBlank()) {
-            collectAsyncProfilerContext(contextBuilder, alert);
-        }
-
         // Quarkus context collection (requires pod name)
         if (alert.getWorkloadInfo().podName() != null && !alert.getWorkloadInfo().podName().isBlank()) {
             collectQuarkusContext(contextBuilder, alert);
@@ -157,7 +152,6 @@ public class McpContextCollector {
             .field(McpConstants.LogFields.HAS_K8S_CONTEXT, context.hasKubernetesContext())
             .field(McpConstants.LogFields.HAS_KRUIZE_CONTEXT, context.hasKruizeContext())
             .field(McpConstants.LogFields.HAS_CRYOSTAT_CONTEXT, context.hasCryostatContext())
-            .field(McpConstants.LogFields.HAS_ASYNC_PROFILER_CONTEXT, context.hasAsyncProfilerContext())
             .field(McpConstants.LogFields.HAS_QUARKUS_CONTEXT, context.hasQuarkusContext())
             .log();
 
@@ -1051,158 +1045,6 @@ public class McpContextCollector {
         } catch (Exception e) {
             log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
                 .field(McpConstants.LogFields.TOOL, McpConstants.Tools.KRUIZE_GET_PERF_RECOMMENDATIONS)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
-        }
-    }
-
-    /**
-     * Collects Async Profiler MCP context from all 6 spec-defined tools.
-     *
-     * <p>Phase 1 — pod-scoped tools (no recording required):
-     * <ol>
-     *   <li>{@code list_profiled_pods} — discover pods with profiler sidecar; extracts
-     *       {@code latestRecordingId} for the alerting pod to use in phase 2.</li>
-     *   <li>{@code get_pod_jvm_status} — JVM health, sidecar readiness, last heartbeat.</li>
-     *   <li>{@code get_jvm_statistics} — live heap %, thread count, GC counts.</li>
-     * </ol>
-     *
-     * <p>Phase 2 — recording-scoped tools (require {@code recording_id} from phase 1):
-     * <ol>
-     *   <li>{@code get_recording} — recording status / lifecycle state.</li>
-     *   <li>{@code get_recording_report} — full profiling report (CPU hotspots, memory, GC).</li>
-     *   <li>{@code get_flame_graph} — call-stack flame graph in JSON format.</li>
-     * </ol>
-     *
-     * <p>Each tool call is in its own try/catch. Phase 2 is skipped if no
-     * {@code latestRecordingId} is found in the phase 1 response.
-     *
-     * @param builder the context builder to populate
-     * @param alert the alert
-     */
-    private void collectAsyncProfilerContext(DiagnosticContext.Builder builder, Alert alert) {
-        String endpoint = mcpConfig.asyncProfiler().endpoint() + McpConstants.Paths.MCP_ENDPOINT;
-        int timeout = mcpConfig.asyncProfiler().timeoutMs();
-        String podName = alert.getWorkloadInfo().podName();
-        String namespace = alert.getWorkloadInfo().namespace();
-
-        // ── Phase 1: pod-scoped tools ──────────────────────────────────────────
-
-        // 1. list_profiled_pods — namespace optional
-        String profiledPodsText = null;
-        String latestRecordingId = null;
-        try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
-            ObjectNode arguments = objectMapper.createObjectNode();
-            if (namespace != null && !namespace.isBlank()) {
-                arguments.put(McpConstants.Arguments.NAMESPACE, namespace);
-            }
-            JsonNode result = callMcpTool(endpoint, sessionId,
-                    McpConstants.Tools.ASYNC_PROFILER_LIST_PROFILED_PODS, arguments, timeout);
-            profiledPodsText = extractTextFromContent(result);
-            latestRecordingId = extractLatestRecordingId(result, podName);
-            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_LIST_PROFILED_PODS)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .log();
-        } catch (Exception e) {
-            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_LIST_PROFILED_PODS)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
-        }
-        builder.profiledPods(profiledPodsText);
-
-        // 2. get_pod_jvm_status — pod_name required, namespace optional
-        try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
-            ObjectNode arguments = objectMapper.createObjectNode();
-            arguments.put(McpConstants.Arguments.POD_NAME, podName);
-            if (namespace != null && !namespace.isBlank()) {
-                arguments.put(McpConstants.Arguments.NAMESPACE, namespace);
-            }
-            JsonNode result = callMcpTool(endpoint, sessionId,
-                    McpConstants.Tools.ASYNC_PROFILER_GET_POD_JVM_STATUS, arguments, timeout);
-            builder.podJvmStatus(extractTextFromContent(result));
-            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_POD_JVM_STATUS)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .log();
-        } catch (Exception e) {
-            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_POD_JVM_STATUS)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
-        }
-
-        // 3. get_jvm_statistics — pod_name only
-        builder.jvmStatistics(callMcpToolSafe(endpoint, timeout,
-                McpConstants.Tools.ASYNC_PROFILER_GET_JVM_STATISTICS, podName, alert,
-                LogMessages.Mcp.MCP_ASYNC_PROFILER_JVM_STATISTICS));
-
-        // ── Phase 2: recording-scoped tools (skip if no recording_id found) ────
-        if (latestRecordingId == null || latestRecordingId.isBlank()) {
-            log.info(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, "No latestRecordingId found — skipping recording tools")
-                .log();
-            return;
-        }
-
-        // 4. get_recording — recording_id required
-        try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
-            ObjectNode arguments = objectMapper.createObjectNode();
-            arguments.put(McpConstants.Arguments.RECORDING_ID, latestRecordingId);
-            JsonNode result = callMcpTool(endpoint, sessionId,
-                    McpConstants.Tools.ASYNC_PROFILER_GET_RECORDING, arguments, timeout);
-            builder.recordingStatus(extractTextFromContent(result));
-            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_RECORDING_STATUS)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .log();
-        } catch (Exception e) {
-            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_RECORDING)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
-        }
-
-        // 5. get_recording_report — recording_id required
-        try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
-            ObjectNode arguments = objectMapper.createObjectNode();
-            arguments.put(McpConstants.Arguments.RECORDING_ID, latestRecordingId);
-            JsonNode result = callMcpTool(endpoint, sessionId,
-                    McpConstants.Tools.ASYNC_PROFILER_GET_RECORDING_REPORT, arguments, timeout);
-            builder.recordingReport(extractTextFromContent(result));
-            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_RECORDING_REPORT)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .log();
-        } catch (Exception e) {
-            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_RECORDING_REPORT)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
-        }
-
-        // 6. get_flame_graph — recording_id + format:"json"
-        try {
-            String sessionId = initializeMcpSession(endpoint, timeout);
-            ObjectNode arguments = objectMapper.createObjectNode();
-            arguments.put(McpConstants.Arguments.RECORDING_ID, latestRecordingId);
-            arguments.put(McpConstants.Arguments.FORMAT, McpConstants.Arguments.FORMAT_JSON);
-            JsonNode result = callMcpTool(endpoint, sessionId,
-                    McpConstants.Tools.ASYNC_PROFILER_GET_FLAME_GRAPH, arguments, timeout);
-            builder.flameGraph(extractTextFromContent(result));
-            log.info(LogMessages.Mcp.MCP_ASYNC_PROFILER_FLAME_GRAPH)
-                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .log();
-        } catch (Exception e) {
-            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
-                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.ASYNC_PROFILER_GET_FLAME_GRAPH)
                 .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
                 .field(McpConstants.LogFields.ERROR, e.getMessage())
                 .log();

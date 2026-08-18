@@ -80,14 +80,6 @@ public final class McpConstants {
         public static final String KRUIZE_GET_COST_RECOMMENDATIONS = "getCostOptimizedRecommendations";
         public static final String KRUIZE_GET_PERF_RECOMMENDATIONS = "getPerformanceOptimizedRecommendations";
 
-        // Async Profiler MCP tools
-        public static final String ASYNC_PROFILER_LIST_PROFILED_PODS    = "list_profiled_pods";
-        public static final String ASYNC_PROFILER_GET_POD_JVM_STATUS    = "get_pod_jvm_status";
-        public static final String ASYNC_PROFILER_GET_JVM_STATISTICS    = "get_jvm_statistics";
-        public static final String ASYNC_PROFILER_GET_RECORDING         = "get_recording";
-        public static final String ASYNC_PROFILER_GET_RECORDING_REPORT  = "get_recording_report";
-        public static final String ASYNC_PROFILER_GET_FLAME_GRAPH       = "get_flame_graph";
-
         // Quarkus MCP tools
         public static final String QUARKUS_FETCH_RAW_METRICS = "fetch_raw_metrics_from_endpoint";
 
@@ -306,7 +298,6 @@ public final class McpConstants {
         public static final String HAS_K8S_CONTEXT = "hasK8sContext";
         public static final String HAS_KRUIZE_CONTEXT = "hasKruizeContext";
         public static final String HAS_CRYOSTAT_CONTEXT = "hasCryostatContext";
-        public static final String HAS_ASYNC_PROFILER_CONTEXT = "hasAsyncProfilerContext";
         public static final String HAS_QUARKUS_CONTEXT = "hasQuarkusContext";
         public static final String HAS_FILESYSTEM_CONTEXT = "hasFilesystemContext";
         public static final String HAS_JMX_CONTEXT = "hasJmxContext";
