@@ -1,5 +1,6 @@
 package com.causa.core.services.validation.impl;
 
+import com.causa.common.constants.JsonParsingConstants;
 import com.causa.common.constants.LLMConstants;
 import com.causa.common.constants.PromptConstants;
 import com.causa.common.logging.CausaLogger;
@@ -21,6 +22,7 @@ import io.quarkus.arc.properties.IfBuildProperty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
 
 /**
  * LLM-based assertion analyzer.
@@ -112,10 +114,14 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
             String userPrompt = buildAnalysisPrompt(assertion, diagnosticContext, template);
 
             // Call LLM
+            // Skills disabled — the assertion analyzer has all context it needs in
+            // diagnosticContext; activating skills adds unnecessary tool round-trips
+            // (3 per assertion × N assertions) with no benefit for validation.
             LLMRequest request = LLMRequest.builder(userPrompt)
                 .systemPrompt(template.systemPrompt())
                 .temperature(0.2) // Low temperature for consistent analysis
                 .maxTokens(3000)  // Allow detailed analysis
+                .enableSkills(false)
                 .build();
 
             LLMResponse response = promptSender.send(request);
@@ -198,20 +204,16 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
      * Parses the LLM analysis response.
      */
     private AnalysisResult parseAnalysisResponse(String responseText) throws Exception {
-        // Clean response
-        String jsonText = responseText.trim();
-        if (jsonText.startsWith("```json")) {
-            jsonText = jsonText.substring(7);
-        } else if (jsonText.startsWith("```")) {
-            jsonText = jsonText.substring(3);
+        // Extract the outermost JSON object from the response.
+        // The pattern handles in order:
+        //   1. an optional opening code fence (```<lang>\n) — skipped as a unit
+        //   2. any leading prose before the first '{' — consumed by [^{]*
+        //   3. trailing text after the last '}' (closing fence, prose) — excluded by greedy .*}
+        Matcher jsonMatcher = JsonParsingConstants.JSON_OBJECT_PATTERN.matcher(responseText);
+        if (!jsonMatcher.find()) {
+            throw new IllegalArgumentException("No JSON object found in LLM response");
         }
-        if (jsonText.endsWith("```")) {
-            jsonText = jsonText.substring(0, jsonText.length() - 3);
-        }
-        jsonText = jsonText.trim();
-
-        // Parse JSON
-        return objectMapper.readValue(jsonText, AnalysisResult.class);
+        return objectMapper.readValue(jsonMatcher.group(1), AnalysisResult.class);
     }
 
     /**
