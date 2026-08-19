@@ -89,7 +89,7 @@ public class McpContextCollector {
      * Collects diagnostic context when running on a Kubernetes cluster.
      * Calls Kubernetes, Kruize, and Cryostat MCP servers.
      */
-    private DiagnosticContext collectContextFromCluster(Alert alert) {
+    DiagnosticContext collectContextFromCluster(Alert alert) {
         log.info(LogMessages.Mcp.MCP_CONTEXT_COLLECTION_START)
             .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
             .field(McpConstants.LogFields.POD_NAME, alert.getWorkloadInfo().podName())
@@ -444,7 +444,7 @@ public class McpContextCollector {
      * @param timeoutMs HTTP timeout in milliseconds
      * @return the session ID
      */
-    private String initializeMcpSession(String endpoint, int timeoutMs) throws Exception {
+    protected String initializeMcpSession(String endpoint, int timeoutMs) throws Exception {
         ObjectNode initRequest = objectMapper.createObjectNode();
         initRequest.put(McpConstants.JsonRpc.FIELD_JSONRPC, McpConstants.JsonRpc.VERSION);
         initRequest.put(McpConstants.JsonRpc.FIELD_ID, 1);
@@ -519,8 +519,8 @@ public class McpContextCollector {
     /**
      * Calls an MCP tool via JSON-RPC 2.0.
      */
-    private JsonNode callMcpTool(String endpoint, String sessionId, String toolName,
-                                  ObjectNode arguments, int timeoutMs) throws Exception {
+    protected JsonNode callMcpTool(String endpoint, String sessionId, String toolName,
+                                   ObjectNode arguments, int timeoutMs) throws Exception {
         ObjectNode toolRequest = objectMapper.createObjectNode();
         toolRequest.put(McpConstants.JsonRpc.FIELD_JSONRPC, McpConstants.JsonRpc.VERSION);
         toolRequest.put(McpConstants.JsonRpc.FIELD_ID, 2);
@@ -1049,78 +1049,6 @@ public class McpContextCollector {
                 .field(McpConstants.LogFields.ERROR, e.getMessage())
                 .log();
         }
-    }
-
-    /**
-     * Extracts the {@code latestRecordingId} for a specific pod from the
-     * {@code list_profiled_pods} JSON-RPC result.
-     *
-     * <p>The result node is the MCP content envelope ({@code content[0].text}).
-     * The text value is a JSON array of pod objects. This method:
-     * <ol>
-     *   <li>Extracts the text string from {@code content[0].text}</li>
-     *   <li>Parses it as a JSON array</li>
-     *   <li>Returns the {@code latestRecordingId} of the first pod whose
-     *       {@code podName} matches the alerting pod name</li>
-     *   <li>Falls back to the first pod's {@code latestRecordingId} if no
-     *       exact name match is found (handles dummy server fixed pod names)</li>
-     * </ol>
-     *
-     * @param result   the JSON-RPC result node from list_profiled_pods
-     * @param podName  the pod name to match
-     * @return the latestRecordingId string, or null if not found
-     */
-    private String extractLatestRecordingId(JsonNode result, String podName) {
-        if (result == null || podName == null) {
-            return null;
-        }
-        try {
-            // Unwrap MCP content envelope: result → content[0].text → JSON array string
-            String arrayText = null;
-            if (result.has(McpConstants.JsonRpc.FIELD_CONTENT)) {
-                JsonNode content = result.get(McpConstants.JsonRpc.FIELD_CONTENT);
-                if (content.isArray() && content.size() > 0) {
-                    JsonNode first = content.get(0);
-                    if (first.has(McpConstants.JsonRpc.FIELD_TEXT)) {
-                        arrayText = first.get(McpConstants.JsonRpc.FIELD_TEXT).asText();
-                    }
-                }
-            }
-
-            JsonNode arrayNode = (arrayText != null)
-                    ? objectMapper.readTree(arrayText)
-                    : result;
-
-            if (arrayNode == null || !arrayNode.isArray()) {
-                return null;
-            }
-
-            // 1st pass: exact pod name match
-            for (JsonNode pod : arrayNode) {
-                JsonNode podNameNode = pod.get("podName");
-                JsonNode recordingIdNode = pod.get("latestRecordingId");
-                if (podNameNode != null && podName.equals(podNameNode.asText())
-                        && recordingIdNode != null && !recordingIdNode.isNull()) {
-                    return recordingIdNode.asText();
-                }
-            }
-
-            // 2nd pass: fallback — return first pod's latestRecordingId if present
-            // (covers dummy servers that return a fixed pod name)
-            for (JsonNode pod : arrayNode) {
-                JsonNode recordingIdNode = pod.get("latestRecordingId");
-                if (recordingIdNode != null && !recordingIdNode.isNull()
-                        && !recordingIdNode.asText().isBlank()) {
-                    return recordingIdNode.asText();
-                }
-            }
-
-        } catch (Exception e) {
-            log.debug("Could not extract latestRecordingId from list_profiled_pods response")
-                .field(McpConstants.LogFields.ERROR, e.getMessage())
-                .log();
-        }
-        return null;
     }
 
     /**

@@ -259,14 +259,9 @@ public final class DiagnosticContext {
     }
 
     /**
-     * Checks if any Async Profiler context was collected.
-     *
-     * @return true if JFR report or flame graph are present
-     */
-    /**
      * Checks if any Quarkus MCP context was collected.
      *
-     * @return true if metrics snapshot or health status are present
+     * @return true if a metrics snapshot is present
      */
     public boolean hasQuarkusContext() {
         return isNotBlank(quarkusRawMetrics);
