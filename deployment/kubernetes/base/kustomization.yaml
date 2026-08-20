@@ -12,5 +12,5 @@ resources:
   - service.yaml
 
 images:
-  - name: quay.io/rh-ee-afayaz/causa-backend
-    newTag: bobathon-adc
+  - name: quay.io/rh-ee-shesaxen/causa-backend
+    newTag: latest_mvp

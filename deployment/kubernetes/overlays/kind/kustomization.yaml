@@ -1,14 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: diagnostics-tool
-
 resources:
   - ../../base
 
 patches:
   - path: configmap-patch.yaml
 
-images:
-  - name: quay.io/rh-ee-afayaz/causa-backend
-    newTag: bobathon-adc

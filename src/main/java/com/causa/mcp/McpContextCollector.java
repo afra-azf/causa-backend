@@ -89,7 +89,7 @@ public class McpContextCollector {
      * Collects diagnostic context when running on a Kubernetes cluster.
      * Calls Kubernetes, Kruize, and Cryostat MCP servers.
      */
-    DiagnosticContext collectContextFromCluster(Alert alert) {
+    private DiagnosticContext collectContextFromCluster(Alert alert) {
         log.info(LogMessages.Mcp.MCP_CONTEXT_COLLECTION_START)
             .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
             .field(McpConstants.LogFields.POD_NAME, alert.getWorkloadInfo().podName())

@@ -134,7 +134,7 @@ class McpContextCollectorTest {
                     };
 
             // when
-            DiagnosticContext ctx = testCollector.collectContextFromCluster(buildAlert());
+            DiagnosticContext ctx = testCollector.collectContext(buildAlert());
 
             // then
             assertThat(ctx.hasQuarkusContext()).isTrue();

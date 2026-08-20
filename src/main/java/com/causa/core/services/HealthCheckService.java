@@ -157,7 +157,6 @@ public class HealthCheckService {
         ComponentHealthDto mcpKruizeHealth = null;
         ComponentHealthDto mcpCryostatHealth = null;
         ComponentHealthDto mcpFilesystemHealth = null;
-
         ComponentHealthDto mcpQuarkusHealth = null;
 
         if (PLATFORM_VM.equals(platform)) {
@@ -256,15 +255,65 @@ public class HealthCheckService {
     /**
      * Check MCP Kubernetes server health and measure latency.
      *
+     * <p>Sends an HTTP GET request to the MCP Kubernetes server health endpoint
+     * and measures the response time. Uses Java's built-in HttpClient with
+     * configured timeout.
+     *
      * @return component health DTO with MCP Kubernetes status and latency
      */
     private ComponentHealthDto checkMcpKubernetesHealth() {
         log.debug(LogMessages.HealthCheck.MCP_K8S_CHECK_STARTED).log();
-        return checkMcpHttpHealth(
-                mcpK8sEndpoint + mcpK8sHealthPath,
-                mcpK8sTimeout,
-                LogMessages.HealthCheck.MCP_K8S_CHECK_PASSED,
-                LogMessages.HealthCheck.MCP_K8S_CHECK_FAILED);
+
+        String healthUrl = mcpK8sEndpoint + mcpK8sHealthPath;
+        long startTime = System.currentTimeMillis();
+        boolean isHealthy = false;
+        int statusCode = 0;
+
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofMillis(mcpK8sTimeout))
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(healthUrl))
+                    .timeout(Duration.ofMillis(mcpK8sTimeout))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            statusCode = response.statusCode();
+            isHealthy = (statusCode >= 200 && statusCode < 300);
+
+        } catch (IOException | InterruptedException e) {
+            log.error(LogMessages.HealthCheck.MCP_K8S_CHECK_FAILED)
+                    .field("endpoint", healthUrl)
+                    .exception(e)
+                    .log();
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        long latency = System.currentTimeMillis() - startTime;
+
+        if (isHealthy) {
+            log.debug(LogMessages.HealthCheck.MCP_K8S_CHECK_PASSED)
+                    .field(ApiConstants.LogFields.LATENCY_MS, latency)
+                    .field("status_code", statusCode)
+                    .log();
+
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.UP.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_CONNECTED)
+                    .latencyMs(latency)
+                    .build();
+        } else {
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.DOWN.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_NOT_AVAILABLE)
+                    .latencyMs(latency)
+                    .build();
+        }
     }
 
     /**
@@ -341,31 +390,128 @@ public class HealthCheckService {
     /**
      * Check MCP Kruize server health and measure latency.
      *
+     * <p>Sends an HTTP GET request to the MCP Kruize server health endpoint
+     * and measures the response time.
+     *
      * @return component health DTO with MCP Kruize status and latency
      */
     private ComponentHealthDto checkMcpKruizeHealth() {
         log.debug(LogMessages.HealthCheck.MCP_KRUIZE_CHECK_STARTED).log();
-        return checkMcpHttpHealth(
-                mcpKruizeEndpoint + mcpKruizeHealthPath,
-                mcpKruizeTimeout,
-                LogMessages.HealthCheck.MCP_KRUIZE_CHECK_PASSED,
-                LogMessages.HealthCheck.MCP_KRUIZE_CHECK_FAILED);
+
+        String healthUrl = mcpKruizeEndpoint + mcpKruizeHealthPath;
+        long startTime = System.currentTimeMillis();
+        boolean isHealthy = false;
+        int statusCode = 0;
+
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofMillis(mcpKruizeTimeout))
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(healthUrl))
+                    .timeout(Duration.ofMillis(mcpKruizeTimeout))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            statusCode = response.statusCode();
+            isHealthy = (statusCode >= 200 && statusCode < 300);
+
+        } catch (IOException | InterruptedException e) {
+            log.error(LogMessages.HealthCheck.MCP_KRUIZE_CHECK_FAILED)
+                    .field("endpoint", healthUrl)
+                    .exception(e)
+                    .log();
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        long latency = System.currentTimeMillis() - startTime;
+
+        if (isHealthy) {
+            log.debug(LogMessages.HealthCheck.MCP_KRUIZE_CHECK_PASSED)
+                    .field(ApiConstants.LogFields.LATENCY_MS, latency)
+                    .field("status_code", statusCode)
+                    .log();
+
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.UP.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_CONNECTED)
+                    .latencyMs(latency)
+                    .build();
+        } else {
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.DOWN.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_NOT_AVAILABLE)
+                    .latencyMs(latency)
+                    .build();
+        }
     }
 
     /**
      * Check MCP Cryostat server health and measure latency.
      *
-     * <p>Cryostat health is on a separate endpoint from the MCP endpoint (different port).
+     * <p>Sends an HTTP GET request to the MCP Cryostat server health endpoint
+     * and measures the response time. Note that Cryostat health is on a separate
+     * endpoint from the MCP endpoint (different port).
      *
      * @return component health DTO with MCP Cryostat status and latency
      */
     private ComponentHealthDto checkMcpCryostatHealth() {
         log.debug(LogMessages.HealthCheck.MCP_CRYOSTAT_CHECK_STARTED).log();
-        return checkMcpHttpHealth(
-                mcpCryostatHealthEndpoint + mcpCryostatHealthPath,
-                mcpCryostatTimeout,
-                LogMessages.HealthCheck.MCP_CRYOSTAT_CHECK_PASSED,
-                LogMessages.HealthCheck.MCP_CRYOSTAT_CHECK_FAILED);
+
+        String healthUrl = mcpCryostatHealthEndpoint + mcpCryostatHealthPath;
+        long startTime = System.currentTimeMillis();
+        boolean isHealthy = false;
+        int statusCode = 0;
+
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofMillis(mcpCryostatTimeout))
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(healthUrl))
+                    .timeout(Duration.ofMillis(mcpCryostatTimeout))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            statusCode = response.statusCode();
+            isHealthy = (statusCode >= 200 && statusCode < 300);
+
+        } catch (IOException | InterruptedException e) {
+            log.error(LogMessages.HealthCheck.MCP_CRYOSTAT_CHECK_FAILED)
+                    .field("endpoint", healthUrl)
+                    .exception(e)
+                    .log();
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        long latency = System.currentTimeMillis() - startTime;
+
+        if (isHealthy) {
+            log.debug(LogMessages.HealthCheck.MCP_CRYOSTAT_CHECK_PASSED)
+                    .field(ApiConstants.LogFields.LATENCY_MS, latency)
+                    .field("status_code", statusCode)
+                    .log();
+
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.UP.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_CONNECTED)
+                    .latencyMs(latency)
+                    .build();
+        } else {
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.DOWN.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_NOT_AVAILABLE)
+                    .latencyMs(latency)
+                    .build();
+        }
     }
 
     /**
@@ -419,62 +565,28 @@ public class HealthCheckService {
     /**
      * Check MCP Filesystem server health and measure latency.
      *
-     * <p>Non-critical — if down, system reports DEGRADED, not DOWN.
+     * <p>Hits {@code causa.mcp.filesystem.endpoint + health-path}. The filesystem MCP
+     * server is non-critical — if it is down but the database is up, the overall status
+     * is DEGRADED rather than DOWN.
      *
      * @return component health DTO with MCP Filesystem status and latency
      */
     private ComponentHealthDto checkMcpFilesystemHealth() {
         log.debug(LogMessages.HealthCheck.MCP_FILESYSTEM_CHECK_STARTED).log();
-        return checkMcpHttpHealth(
-                mcpFilesystemEndpoint + mcpFilesystemHealthPath,
-                mcpFilesystemTimeout,
-                LogMessages.HealthCheck.MCP_FILESYSTEM_CHECK_PASSED,
-                LogMessages.HealthCheck.MCP_FILESYSTEM_CHECK_FAILED);
-    }
 
-    /**
-     * Check MCP Quarkus server health and measure latency.
-     *
-     * <p>Non-critical — if down, system reports DEGRADED, not DOWN.
-     *
-     * @return component health DTO with Quarkus MCP status and latency
-     */
-    private ComponentHealthDto checkMcpQuarkusHealth() {
-        log.debug(LogMessages.HealthCheck.MCP_QUARKUS_CHECK_STARTED).log();
-        return checkMcpHttpHealth(
-                mcpQuarkusEndpoint + mcpQuarkusHealthPath,
-                mcpQuarkusTimeout,
-                LogMessages.HealthCheck.MCP_QUARKUS_CHECK_PASSED,
-                LogMessages.HealthCheck.MCP_QUARKUS_CHECK_FAILED);
-    }
-
-    /**
-     * Shared HTTP health check helper used by all MCP server checks.
-     *
-     * <p>Sends a GET request to {@code healthUrl} with the given timeout and returns
-     * a {@link ComponentHealthDto} reflecting the result. Any 2xx response is UP;
-     * connection failures or non-2xx responses are DOWN.
-     *
-     * @param healthUrl  full URL to GET (endpoint + health path)
-     * @param timeoutMs  connect and read timeout in milliseconds
-     * @param passedMsg  debug log message to emit on success
-     * @param failedMsg  error log message to emit on failure
-     * @return component health DTO
-     */
-    private ComponentHealthDto checkMcpHttpHealth(String healthUrl, int timeoutMs,
-                                                   String passedMsg, String failedMsg) {
+        String healthUrl = mcpFilesystemEndpoint + mcpFilesystemHealthPath;
         long startTime = System.currentTimeMillis();
         boolean isHealthy = false;
         int statusCode = 0;
 
         try {
             HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(timeoutMs))
+                    .connectTimeout(Duration.ofMillis(mcpFilesystemTimeout))
                     .build();
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(healthUrl))
-                    .timeout(Duration.ofMillis(timeoutMs))
+                    .timeout(Duration.ofMillis(mcpFilesystemTimeout))
                     .GET()
                     .build();
 
@@ -483,7 +595,7 @@ public class HealthCheckService {
             isHealthy = (statusCode >= 200 && statusCode < 300);
 
         } catch (IOException | InterruptedException e) {
-            log.error(failedMsg)
+            log.error(LogMessages.HealthCheck.MCP_FILESYSTEM_CHECK_FAILED)
                     .field("endpoint", healthUrl)
                     .exception(e)
                     .log();
@@ -495,10 +607,74 @@ public class HealthCheckService {
         long latency = System.currentTimeMillis() - startTime;
 
         if (isHealthy) {
-            log.debug(passedMsg)
+            log.debug(LogMessages.HealthCheck.MCP_FILESYSTEM_CHECK_PASSED)
                     .field(ApiConstants.LogFields.LATENCY_MS, latency)
                     .field("status_code", statusCode)
                     .log();
+
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.UP.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_CONNECTED)
+                    .latencyMs(latency)
+                    .build();
+        } else {
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.DOWN.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_NOT_AVAILABLE)
+                    .latencyMs(latency)
+                    .build();
+        }
+    }
+
+    /**
+     * Check MCP Quarkus server health and measure latency.
+     *
+     * <p>Sends an HTTP GET request to the MCP Quarkus server health endpoint
+     * and measures the response time. Non-critical — if down, system reports DEGRADED, not DOWN.
+     *
+     * @return component health DTO with Quarkus MCP status and latency
+     */
+    private ComponentHealthDto checkMcpQuarkusHealth() {
+        log.debug(LogMessages.HealthCheck.MCP_QUARKUS_CHECK_STARTED).log();
+
+        String healthUrl = mcpQuarkusEndpoint + mcpQuarkusHealthPath;
+        long startTime = System.currentTimeMillis();
+        boolean isHealthy = false;
+        int statusCode = 0;
+
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofMillis(mcpQuarkusTimeout))
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(healthUrl))
+                    .timeout(Duration.ofMillis(mcpQuarkusTimeout))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            statusCode = response.statusCode();
+            isHealthy = (statusCode >= 200 && statusCode < 300);
+
+        } catch (IOException | InterruptedException e) {
+            log.error(LogMessages.HealthCheck.MCP_QUARKUS_CHECK_FAILED)
+                    .field("endpoint", healthUrl)
+                    .exception(e)
+                    .log();
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        long latency = System.currentTimeMillis() - startTime;
+
+        if (isHealthy) {
+            log.debug(LogMessages.HealthCheck.MCP_QUARKUS_CHECK_PASSED)
+                    .field(ApiConstants.LogFields.LATENCY_MS, latency)
+                    .field("status_code", statusCode)
+                    .log();
+
             return ComponentHealthDto.builder()
                     .status(AppConstants.HealthStatus.UP.getValue())
                     .message(HealthCheckConstants.Messages.MCP_CONNECTED)
@@ -513,4 +689,3 @@ public class HealthCheckService {
         }
     }
 }
-

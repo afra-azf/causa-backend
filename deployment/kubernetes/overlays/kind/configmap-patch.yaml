@@ -4,13 +4,5 @@ metadata:
   name: causa-config
 data:
   CAUSA_LOG_LEVEL: "DEBUG"
+  # Environment marker
   CLUSTER_TYPE: "kind"
-
-  # Database — CloudNativePG cluster in diagnostics-tool namespace
-  CAUSA_DB_URL: "jdbc:postgresql://diagnostics-tool-db-rw.diagnostics-tool.svc.cluster.local:5432/diagnostics-tool-db"
-
-  # LLM — Vertex AI Anthropic
-  LLM_PROVIDER: "vertex-ai-anthropic"
-  LLM_MODEL_NAME: "claude-3-7-sonnet@20250219"
-  VERTEX_LOCATION: "us-east5"
-

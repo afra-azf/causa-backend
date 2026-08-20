@@ -21,8 +21,8 @@ spec:
       serviceAccountName: causa-backend
       containers:
       - name: causa-backend
-        image: quay.io/rh-ee-afayaz/causa-backend:bobathon-adc
-        imagePullPolicy: IfNotPresent
+        image: quay.io/rh-ee-shesaxen/causa-backend:latest_mvp
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8080
