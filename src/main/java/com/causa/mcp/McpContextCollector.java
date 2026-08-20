@@ -1082,6 +1082,9 @@ public class McpContextCollector {
             ObjectNode arguments = objectMapper.createObjectNode();
             arguments.put(McpConstants.Arguments.POD_NAME, podName);
             arguments.put(McpConstants.Arguments.NAMESPACE, alert.getWorkloadInfo().namespace());
+            mcpConfig.quarkus().metricsBaseUrl()
+                .filter(url -> !url.isBlank())
+                .ifPresent(url -> arguments.put(McpConstants.Arguments.BASE_URL, url));
             JsonNode result = callMcpTool(endpoint, sessionId,
                     McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS, arguments, timeout);
             builder.quarkusRawMetrics(extractTextFromContent(result));

@@ -3,6 +3,7 @@ package com.causa.config;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+import java.util.Optional;
 
 /**
  * MCP Configuration
@@ -264,6 +265,15 @@ public interface McpConfig {
         @WithName("timeout-ms")
         @WithDefault("10000")
         int timeoutMs();
+
+        /**
+         * When set, passed as {@code baseUrl} to {@code fetch_raw_metrics_from_endpoint}.
+         *
+         * @return the app base URL, or empty string if not configured
+         */
+        @WithName("metrics-base-url")
+        @WithDefault("")
+        Optional<String> metricsBaseUrl();
 
     }
 

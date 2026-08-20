@@ -161,6 +161,7 @@ causa:
       endpoint: ${CAUSA_MCP_QUARKUS_ENDPOINT:http://quarkus-mcp-server:8082}
       health-path: ${CAUSA_MCP_QUARKUS_HEALTH_PATH:/healthz}
       timeout-ms: ${CAUSA_MCP_QUARKUS_TIMEOUT:10000}
+      metrics-base-url: ${CAUSA_MCP_QUARKUS_METRICS_BASE_URL:}
     jmx:
       endpoint: ${CAUSA_MCP_JMX_ENDPOINT:http://jmx-mcp-server:8080}
       health-path: ${CAUSA_MCP_JMX_HEALTH_PATH:/healthz}
