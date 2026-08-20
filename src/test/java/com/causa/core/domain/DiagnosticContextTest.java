@@ -24,19 +24,6 @@ class DiagnosticContextTest {
             .build();
     }
 
-    static DiagnosticContext asyncProfilerCtx() {
-        return DiagnosticContext.builder()
-            .platform(DiagnosticContext.PLATFORM_CLUSTER)
-            .workloadName("my-app")
-            .profiledPods("[{\"podName\":\"my-app-pod\",\"profilerStatus\":\"READY\"}]")
-            .podJvmStatus("{\"profilerStatus\":\"READY\",\"jvmHealth\":{\"isHealthy\":true}}")
-            .jvmStatistics("{\"heapUsagePercent\":72.5,\"threadCount\":42}")
-            .recordingStatus("{\"status\":\"READY\",\"recordingId\":\"rec-abc123\"}")
-            .recordingReport("{\"summary\":{\"topHotspot\":\"com.example.Service.process\"}}")
-            .flameGraph("{\"frames\":[{\"signature\":\"java.lang.Thread.run\",\"samples\":1000}]}")
-            .build();
-    }
-
     static DiagnosticContext vmCtx() {
         return DiagnosticContext.builder()
             .platform(DiagnosticContext.PLATFORM_VM)
@@ -100,15 +87,6 @@ class DiagnosticContextTest {
             assertThat(ctx.getGcAnalysis()).isEqualTo("GC data");
         }
 
-        @Test void asyncProfilerGettersReturnExpectedValues() {
-            DiagnosticContext ctx = asyncProfilerCtx();
-            assertThat(ctx.getProfiledPods()).contains("READY");
-            assertThat(ctx.getPodJvmStatus()).contains("isHealthy");
-            assertThat(ctx.getJvmStatistics()).contains("72.5");
-            assertThat(ctx.getRecordingStatus()).contains("rec-abc123");
-            assertThat(ctx.getRecordingReport()).contains("topHotspot");
-            assertThat(ctx.getFlameGraph()).contains("java.lang.Thread.run");
-        }
     }
 
     @Test void platformConstants_defined() {

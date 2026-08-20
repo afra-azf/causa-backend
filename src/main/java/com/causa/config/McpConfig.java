@@ -265,19 +265,6 @@ public interface McpConfig {
         @WithDefault("10000")
         int timeoutMs();
 
-        /**
-         * Base URL of the Quarkus application to scrape metrics from.
-         *
-         * <p>Passed as the {@code baseUrl} argument to {@code fetch_raw_metrics_from_endpoint}.
-         * The Quarkus MCP server appends {@code /q/metrics} to this URL and scrapes it directly.
-         *
-         * <p>Example: {@code http://tfb-qrh-service.default.svc.cluster.local:8080}
-         *
-         * @return the base URL of the monitored Quarkus application
-         */
-        @WithName("metrics-base-url")
-        @WithDefault("")
-        String metricsBaseUrl();
     }
 
     /**

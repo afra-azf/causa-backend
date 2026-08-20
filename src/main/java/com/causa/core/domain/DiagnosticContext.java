@@ -44,14 +44,6 @@ public final class DiagnosticContext {
     private final String exceptionAnalysis;
     private final String containerAnalysis;
 
-    // Async Profiler MCP context (cluster)
-    private final String profiledPods;
-    private final String podJvmStatus;
-    private final String jvmStatistics;
-    private final String recordingStatus;
-    private final String recordingReport;
-    private final String flameGraph;
-
     // Quarkus MCP context (cluster)
     private final String quarkusRawMetrics;
 
@@ -84,12 +76,6 @@ public final class DiagnosticContext {
         this.threadAnalysis = builder.threadAnalysis;
         this.exceptionAnalysis = builder.exceptionAnalysis;
         this.containerAnalysis = builder.containerAnalysis;
-        this.profiledPods    = builder.profiledPods;
-        this.podJvmStatus    = builder.podJvmStatus;
-        this.jvmStatistics   = builder.jvmStatistics;
-        this.recordingStatus = builder.recordingStatus;
-        this.recordingReport = builder.recordingReport;
-        this.flameGraph      = builder.flameGraph;
         this.quarkusRawMetrics = builder.quarkusRawMetrics;
         this.libertyLogs = builder.libertyLogs;
         this.heapStatus = builder.heapStatus;
@@ -165,30 +151,6 @@ public final class DiagnosticContext {
 
     public String getContainerAnalysis() {
         return containerAnalysis;
-    }
-
-    public String getProfiledPods() {
-        return profiledPods;
-    }
-
-    public String getPodJvmStatus() {
-        return podJvmStatus;
-    }
-
-    public String getJvmStatistics() {
-        return jvmStatistics;
-    }
-
-    public String getRecordingStatus() {
-        return recordingStatus;
-    }
-
-    public String getRecordingReport() {
-        return recordingReport;
-    }
-
-    public String getFlameGraph() {
-        return flameGraph;
     }
 
     public String getQuarkusRawMetrics() {
@@ -357,14 +319,6 @@ public final class DiagnosticContext {
         appendSection(sb, ContextConstants.SECTION_EXCEPTION_ANALYSIS, exceptionAnalysis);
         appendSection(sb, ContextConstants.SECTION_CONTAINER_ANALYSIS, containerAnalysis);
 
-        // Async Profiler context
-        appendSection(sb, ContextConstants.SECTION_PROFILED_PODS,    profiledPods);
-        appendSection(sb, ContextConstants.SECTION_POD_JVM_STATUS,   podJvmStatus);
-        appendSection(sb, ContextConstants.SECTION_JVM_STATISTICS,   jvmStatistics);
-        appendSection(sb, ContextConstants.SECTION_RECORDING_STATUS, recordingStatus);
-        appendSection(sb, ContextConstants.SECTION_RECORDING_REPORT, recordingReport);
-        appendSection(sb, ContextConstants.SECTION_FLAME_GRAPH,      flameGraph);
-
         // Quarkus context
         appendSection(sb, ContextConstants.SECTION_QUARKUS_RAW_METRICS, quarkusRawMetrics);
     }
@@ -438,12 +392,6 @@ public final class DiagnosticContext {
         private String threadAnalysis;
         private String exceptionAnalysis;
         private String containerAnalysis;
-        private String profiledPods;
-        private String podJvmStatus;
-        private String jvmStatistics;
-        private String recordingStatus;
-        private String recordingReport;
-        private String flameGraph;
         private String quarkusRawMetrics;
         private String libertyLogs;
         private String heapStatus;
@@ -533,38 +481,6 @@ public final class DiagnosticContext {
 
         public Builder containerAnalysis(String containerAnalysis) {
             this.containerAnalysis = containerAnalysis;
-            return this;
-        }
-
-        // Cluster — Async Profiler MCP
-
-        public Builder profiledPods(String profiledPods) {
-            this.profiledPods = profiledPods;
-            return this;
-        }
-
-        public Builder podJvmStatus(String podJvmStatus) {
-            this.podJvmStatus = podJvmStatus;
-            return this;
-        }
-
-        public Builder jvmStatistics(String jvmStatistics) {
-            this.jvmStatistics = jvmStatistics;
-            return this;
-        }
-
-        public Builder recordingStatus(String recordingStatus) {
-            this.recordingStatus = recordingStatus;
-            return this;
-        }
-
-        public Builder recordingReport(String recordingReport) {
-            this.recordingReport = recordingReport;
-            return this;
-        }
-
-        public Builder flameGraph(String flameGraph) {
-            this.flameGraph = flameGraph;
             return this;
         }
 

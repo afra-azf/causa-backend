@@ -14,7 +14,3 @@ data:
   LLM_MODEL_NAME: "claude-3-7-sonnet@20250219"
   VERTEX_LOCATION: "us-east5"
 
-  # MCP Quarkus — base URL of the Quarkus app to scrape (MCP server appends /q/metrics)
-  # On OpenShift: point to the actual app under observation (e.g. kruize-optimizer.openshift-tuning.svc.cluster.local:8080)
-  # On Kind: point to the tfb-qrh benchmark app deployed for testing
-  CAUSA_MCP_QUARKUS_METRICS_BASE_URL: "http://tfb-qrh-service.default.svc.cluster.local:8080"

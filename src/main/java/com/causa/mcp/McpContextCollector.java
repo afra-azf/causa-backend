@@ -1054,22 +1054,22 @@ public class McpContextCollector {
     /**
      * Collects Quarkus MCP context (raw metrics snapshot).
      *
-     * <p>Calls {@code fetch_raw_metrics_from_endpoint} with {@code baseUrl} — the base URL
-     * of the monitored Quarkus application. The MCP server appends {@code /q/metrics} and
-     * scrapes it directly (Direct Scrape path per the server's three-tier fallback).
+     * <p>Calls {@code fetch_raw_metrics_from_endpoint} with {@code podName} and {@code namespace}
+     * from the alert — the MCP server queries Prometheus using these labels to retrieve metrics
+     * for the alerting pod. No app URL configuration is required.
      *
-     * <p>If {@code metricsBaseUrl} is not configured, the call is skipped with a warning.
+     * <p>If {@code podName} is not present in the alert, the call is skipped with a warning.
      *
      * @param builder the context builder to populate
      * @param alert the alert
      */
     private void collectQuarkusContext(DiagnosticContext.Builder builder, Alert alert) {
-        String metricsBaseUrl = mcpConfig.quarkus().metricsBaseUrl();
-        if (metricsBaseUrl == null || metricsBaseUrl.isBlank()) {
+        String podName = alert.getWorkloadInfo().podName();
+        if (podName == null || podName.isBlank()) {
             log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
                 .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS)
                 .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
-                .field(McpConstants.LogFields.ERROR, "CAUSA_MCP_QUARKUS_METRICS_BASE_URL is not configured — skipping Quarkus metrics collection")
+                .field(McpConstants.LogFields.ERROR, "podName not present in alert — skipping Quarkus metrics collection")
                 .log();
             return;
         }
@@ -1080,12 +1080,14 @@ public class McpContextCollector {
         try {
             String sessionId = initializeMcpSession(endpoint, timeout);
             ObjectNode arguments = objectMapper.createObjectNode();
-            arguments.put(McpConstants.Arguments.BASE_URL, metricsBaseUrl);
+            arguments.put(McpConstants.Arguments.POD_NAME, podName);
+            arguments.put(McpConstants.Arguments.NAMESPACE, alert.getWorkloadInfo().namespace());
             JsonNode result = callMcpTool(endpoint, sessionId,
                     McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS, arguments, timeout);
             builder.quarkusRawMetrics(extractTextFromContent(result));
             log.info(LogMessages.Mcp.MCP_QUARKUS_RAW_METRICS)
                 .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.POD_NAME, podName)
                 .log();
         } catch (Exception e) {
             log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
