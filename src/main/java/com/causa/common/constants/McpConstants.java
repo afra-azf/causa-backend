@@ -138,12 +138,7 @@ public final class McpConstants {
         // Kruize arguments
         public static final String CONTAINER_NAME = "containerName";
 
-        // Async Profiler / recording arguments
-        public static final String RECORDING_ID   = "recording_id";
-        public static final String FORMAT         = "format";
-        public static final String FORMAT_JSON    = "json";
-
-        // Cryostat / Async Profiler arguments
+        // Cryostat arguments
         public static final String POD_NAME = "pod_name";
 
         // Quarkus MCP arguments
