@@ -10,6 +10,7 @@ import com.causa.common.constants.LLMConstants;
 import com.causa.common.logging.CausaLogger;
 import com.causa.common.logging.LogMessages;
 import com.causa.config.AppConfig;
+import com.causa.config.McpConfig;
 import com.causa.core.domain.LLMRequest;
 import com.causa.core.domain.LLMResponse;
 import com.causa.core.ports.llm.PromptSender;
@@ -67,6 +68,9 @@ public class HealthCheckService {
     private final String mcpFilesystemEndpoint;
     private final String mcpFilesystemHealthPath;
     private final int mcpFilesystemTimeout;
+    private final String mcpQuarkusEndpoint;
+    private final String mcpQuarkusHealthPath;
+    private final int mcpQuarkusTimeout;
     private final PromptSender llmPromptSender;
     private final AppConfig appConfig;
 
@@ -88,6 +92,7 @@ public class HealthCheckService {
             @ConfigProperty(name = "causa.mcp.filesystem.endpoint") String mcpFilesystemEndpoint,
             @ConfigProperty(name = "causa.mcp.filesystem.health-path") String mcpFilesystemHealthPath,
             @ConfigProperty(name = "causa.mcp.filesystem.timeout-ms") int mcpFilesystemTimeout,
+            McpConfig mcpConfig,
             PromptSender llmPromptSender,
             AppConfig appConfig) {
         this.databaseConnectionService = databaseConnectionService;
@@ -106,6 +111,9 @@ public class HealthCheckService {
         this.mcpFilesystemEndpoint = mcpFilesystemEndpoint;
         this.mcpFilesystemHealthPath = mcpFilesystemHealthPath;
         this.mcpFilesystemTimeout = mcpFilesystemTimeout;
+        this.mcpQuarkusEndpoint = mcpConfig.quarkus().endpoint().orElse("");
+        this.mcpQuarkusHealthPath = mcpConfig.quarkus().healthPath();
+        this.mcpQuarkusTimeout = mcpConfig.quarkus().timeoutMs();
         this.llmPromptSender = llmPromptSender;
         this.appConfig = appConfig;
     }
@@ -148,13 +156,14 @@ public class HealthCheckService {
         ComponentHealthDto mcpKruizeHealth = null;
         ComponentHealthDto mcpCryostatHealth = null;
         ComponentHealthDto mcpFilesystemHealth = null;
+        ComponentHealthDto mcpQuarkusHealth = null;
 
         if (PLATFORM_VM.equals(platform)) {
             // VM mode: only check filesystem MCP
             mcpFilesystemHealth = checkMcpFilesystemHealth();
             responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_FILESYSTEM, mcpFilesystemHealth);
         } else {
-            // Cluster mode: check Kubernetes, Kruize, and Cryostat MCP servers
+            // Cluster mode: check Kubernetes, Kruize, Cryostat, and Quarkus MCP servers
             mcpK8sHealth = checkMcpKubernetesHealth();
             responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_KUBERNETES, mcpK8sHealth);
 
@@ -163,11 +172,18 @@ public class HealthCheckService {
 
             mcpCryostatHealth = checkMcpCryostatHealth();
             responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_CRYOSTAT, mcpCryostatHealth);
+
+            // Only check and report Quarkus MCP if endpoint is configured
+            if (!mcpQuarkusEndpoint.isBlank()) {
+                mcpQuarkusHealth = checkMcpQuarkusHealth();
+                responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_QUARKUS, mcpQuarkusHealth);
+            }
         }
 
         // Determine overall system status
         AppConstants.HealthStatus overallStatus = determineOverallStatus(
-            databaseHealth, mcpK8sHealth, llmHealth, mcpKruizeHealth, mcpCryostatHealth, mcpFilesystemHealth);
+            databaseHealth, mcpK8sHealth, llmHealth, mcpKruizeHealth, mcpCryostatHealth, mcpFilesystemHealth,
+            mcpQuarkusHealth);
         responseBuilder.status(overallStatus.getValue());
 
         HealthCheckResponseDto response = responseBuilder.build();
@@ -520,7 +536,8 @@ public class HealthCheckService {
             ComponentHealthDto llmHealth,
             ComponentHealthDto mcpKruizeHealth,
             ComponentHealthDto mcpCryostatHealth,
-            ComponentHealthDto mcpFilesystemHealth) {
+            ComponentHealthDto mcpFilesystemHealth,
+            ComponentHealthDto mcpQuarkusHealth) {
 
         // Database is a critical component
         if (!AppConstants.HealthStatus.UP.getValue().equals(databaseHealth.getStatus())) {
@@ -537,7 +554,9 @@ public class HealthCheckService {
             (mcpCryostatHealth != null &&
              !AppConstants.HealthStatus.UP.getValue().equals(mcpCryostatHealth.getStatus())) ||
             (mcpFilesystemHealth != null &&
-             !AppConstants.HealthStatus.UP.getValue().equals(mcpFilesystemHealth.getStatus()))) {
+             !AppConstants.HealthStatus.UP.getValue().equals(mcpFilesystemHealth.getStatus())) ||
+            (mcpQuarkusHealth != null &&
+             !AppConstants.HealthStatus.UP.getValue().equals(mcpQuarkusHealth.getStatus()))) {
             return AppConstants.HealthStatus.DEGRADED;
         }
 
@@ -608,5 +627,67 @@ public class HealthCheckService {
                     .build();
         }
     }
-}
 
+    /**
+     * Check MCP Quarkus server health and measure latency.
+     *
+     * <p>Sends an HTTP GET request to the MCP Quarkus server health endpoint
+     * and measures the response time. Non-critical — if down, system reports DEGRADED, not DOWN.
+     *
+     * @return component health DTO with Quarkus MCP status and latency
+     */
+    private ComponentHealthDto checkMcpQuarkusHealth() {
+        log.debug(LogMessages.HealthCheck.MCP_QUARKUS_CHECK_STARTED).log();
+
+        String healthUrl = mcpQuarkusEndpoint + mcpQuarkusHealthPath;
+        long startTime = System.currentTimeMillis();
+        boolean isHealthy = false;
+        int statusCode = 0;
+
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofMillis(mcpQuarkusTimeout))
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(healthUrl))
+                    .timeout(Duration.ofMillis(mcpQuarkusTimeout))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            statusCode = response.statusCode();
+            isHealthy = (statusCode >= 200 && statusCode < 300);
+
+        } catch (IOException | InterruptedException e) {
+            log.error(LogMessages.HealthCheck.MCP_QUARKUS_CHECK_FAILED)
+                    .field("endpoint", healthUrl)
+                    .exception(e)
+                    .log();
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        long latency = System.currentTimeMillis() - startTime;
+
+        if (isHealthy) {
+            log.debug(LogMessages.HealthCheck.MCP_QUARKUS_CHECK_PASSED)
+                    .field(ApiConstants.LogFields.LATENCY_MS, latency)
+                    .field("status_code", statusCode)
+                    .log();
+
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.UP.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_CONNECTED)
+                    .latencyMs(latency)
+                    .build();
+        } else {
+            return ComponentHealthDto.builder()
+                    .status(AppConstants.HealthStatus.DOWN.getValue())
+                    .message(HealthCheckConstants.Messages.MCP_NOT_AVAILABLE)
+                    .latencyMs(latency)
+                    .build();
+        }
+    }
+}

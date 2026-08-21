@@ -1,10 +1,15 @@
 package com.causa.mcp;
 
+import java.util.Optional;
 import com.causa.common.constants.AlertConstants.AlertSeverity;
 import com.causa.common.constants.AlertConstants.AlertStatus;
 import com.causa.config.McpConfig;
 import com.causa.core.domain.Alert;
 import com.causa.core.domain.DiagnosticContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,6 +34,7 @@ class McpContextCollectorTest {
     @Mock McpConfig.KubernetesConfig k8sConfig;
     @Mock McpConfig.KruizeConfig kruizeConfig;
     @Mock McpConfig.CryostatConfig cryostatConfig;
+    @Mock McpConfig.QuarkusConfig quarkusConfig;
     @Mock McpConfig.JmxConfig jmxConfig;
     @Mock McpConfig.FilesystemConfig filesystemMcpConfig;
     @Mock LibertyLogsContextCollector libertyLogsContextCollector;
@@ -71,6 +77,10 @@ class McpContextCollectorTest {
             when(cryostatConfig.maxRetries()).thenReturn(0);
             when(cryostatConfig.retryDelayMs()).thenReturn(1);
 
+            when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
+            when(quarkusConfig.endpoint()).thenReturn(Optional.of("http://192.0.2.1"));
+            when(quarkusConfig.timeoutMs()).thenReturn(1);
+
             collector = new McpContextCollector(mcpConfig, libertyLogsContextCollector, "cluster");
         }
 
@@ -95,6 +105,41 @@ class McpContextCollectorTest {
             assertThat(ctx.hasKubernetesContext()).isFalse();
             assertThat(ctx.hasKruizeContext()).isFalse();
             assertThat(ctx.hasCryostatContext()).isFalse();
+            assertThat(ctx.hasQuarkusContext()).isFalse();
+        }
+
+        @Test
+        @DisplayName("hasQuarkusContext is true when Quarkus MCP tool returns metrics")
+        void shouldCollectQuarkusMetricsWhenMcpToolSucceeds() throws Exception {
+            // given
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode textEntry = mapper.createObjectNode();
+            textEntry.put("text", "quarkus_http_server_bytes_total 42\n");
+            ArrayNode contentArray = mapper.createArrayNode();
+            contentArray.add(textEntry);
+            ObjectNode metricsResult = mapper.createObjectNode();
+            metricsResult.set("content", contentArray);
+
+            McpContextCollector testCollector =
+                    new McpContextCollector(mcpConfig, libertyLogsContextCollector, "cluster") {
+                        @Override
+                        protected String initializeMcpSession(String endpoint, int timeoutMs) {
+                            return "test-session";
+                        }
+
+                        @Override
+                        protected JsonNode callMcpTool(String endpoint, String sessionId,
+                                String toolName, ObjectNode arguments, int timeoutMs) {
+                            return metricsResult;
+                        }
+                    };
+
+            // when
+            DiagnosticContext ctx = testCollector.collectContext(buildAlert());
+
+            // then
+            assertThat(ctx.hasQuarkusContext()).isTrue();
+            assertThat(ctx.getQuarkusRawMetrics()).contains("quarkus_http_server_bytes_total 42");
         }
 
         @Test
@@ -200,6 +245,10 @@ class McpContextCollectorTest {
             when(cryostatConfig.timeoutMs()).thenReturn(1);
             when(cryostatConfig.maxRetries()).thenReturn(0);
             when(cryostatConfig.retryDelayMs()).thenReturn(1);
+
+            when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
+            when(quarkusConfig.endpoint()).thenReturn(Optional.of("http://192.0.2.1"));
+            when(quarkusConfig.timeoutMs()).thenReturn(1);
 
             McpContextCollector c = new McpContextCollector(mcpConfig, libertyLogsContextCollector, null);
             DiagnosticContext ctx = c.collectContext(buildAlert());

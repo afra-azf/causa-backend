@@ -140,6 +140,11 @@ public class McpContextCollector {
             collectCryostatContext(contextBuilder, alert);
         }
 
+        // Quarkus context collection (requires pod name)
+        if (alert.getWorkloadInfo().podName() != null && !alert.getWorkloadInfo().podName().isBlank()) {
+            collectQuarkusContext(contextBuilder, alert);
+        }
+
         DiagnosticContext context = contextBuilder.build();
 
         log.info(LogMessages.Mcp.MCP_CONTEXT_COLLECTION_COMPLETE)
@@ -147,6 +152,7 @@ public class McpContextCollector {
             .field(McpConstants.LogFields.HAS_K8S_CONTEXT, context.hasKubernetesContext())
             .field(McpConstants.LogFields.HAS_KRUIZE_CONTEXT, context.hasKruizeContext())
             .field(McpConstants.LogFields.HAS_CRYOSTAT_CONTEXT, context.hasCryostatContext())
+            .field(McpConstants.LogFields.HAS_QUARKUS_CONTEXT, context.hasQuarkusContext())
             .log();
 
         return context;
@@ -438,7 +444,7 @@ public class McpContextCollector {
      * @param timeoutMs HTTP timeout in milliseconds
      * @return the session ID
      */
-    private String initializeMcpSession(String endpoint, int timeoutMs) throws Exception {
+    protected String initializeMcpSession(String endpoint, int timeoutMs) throws Exception {
         ObjectNode initRequest = objectMapper.createObjectNode();
         initRequest.put(McpConstants.JsonRpc.FIELD_JSONRPC, McpConstants.JsonRpc.VERSION);
         initRequest.put(McpConstants.JsonRpc.FIELD_ID, 1);
@@ -513,8 +519,8 @@ public class McpContextCollector {
     /**
      * Calls an MCP tool via JSON-RPC 2.0.
      */
-    private JsonNode callMcpTool(String endpoint, String sessionId, String toolName,
-                                  ObjectNode arguments, int timeoutMs) throws Exception {
+    protected JsonNode callMcpTool(String endpoint, String sessionId, String toolName,
+                                   ObjectNode arguments, int timeoutMs) throws Exception {
         ObjectNode toolRequest = objectMapper.createObjectNode();
         toolRequest.put(McpConstants.JsonRpc.FIELD_JSONRPC, McpConstants.JsonRpc.VERSION);
         toolRequest.put(McpConstants.JsonRpc.FIELD_ID, 2);
@@ -1042,6 +1048,102 @@ public class McpContextCollector {
                 .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
                 .field(McpConstants.LogFields.ERROR, e.getMessage())
                 .log();
+        }
+    }
+
+    /**
+     * Collects Quarkus MCP context (raw metrics snapshot).
+     *
+     * <p>Calls {@code fetch_raw_metrics_from_endpoint} with {@code podName} and {@code namespace}
+     * from the alert — the MCP server queries Prometheus using these labels to retrieve metrics
+     * for the alerting pod. No app URL configuration is required.
+     *
+     * <p>If {@code podName} is not present in the alert, the call is skipped with a warning.
+     *
+     * @param builder the context builder to populate
+     * @param alert the alert
+     */
+    private void collectQuarkusContext(DiagnosticContext.Builder builder, Alert alert) {
+        String podName = alert.getWorkloadInfo().podName();
+        if (podName == null || podName.isBlank()) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, "podName not present in alert — skipping Quarkus metrics collection")
+                .log();
+            return;
+        }
+
+        String quarkusBase = mcpConfig.quarkus().endpoint().orElse("");
+        if (quarkusBase.isBlank()) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, "CAUSA_MCP_QUARKUS_ENDPOINT not configured — skipping Quarkus metrics collection")
+                .log();
+            return;
+        }
+        String endpoint = quarkusBase + McpConstants.Paths.MCP_ENDPOINT;
+        int timeout = mcpConfig.quarkus().timeoutMs();
+
+        try {
+            String sessionId = initializeMcpSession(endpoint, timeout);
+            ObjectNode arguments = objectMapper.createObjectNode();
+            arguments.put(McpConstants.Arguments.POD_NAME, podName);
+            arguments.put(McpConstants.Arguments.NAMESPACE, alert.getWorkloadInfo().namespace());
+            mcpConfig.quarkus().metricsBaseUrl()
+                .filter(url -> !url.isBlank())
+                .ifPresent(url -> arguments.put(McpConstants.Arguments.BASE_URL, url));
+            JsonNode result = callMcpTool(endpoint, sessionId,
+                    McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS, arguments, timeout);
+            builder.quarkusRawMetrics(extractTextFromContent(result));
+            log.info(LogMessages.Mcp.MCP_QUARKUS_RAW_METRICS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.POD_NAME, podName)
+                .log();
+        } catch (Exception e) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+        }
+    }
+
+    /**
+     * Calls a single pod-scoped MCP tool safely, logging success or warning on failure.
+     *
+     * <p>Encapsulates the repetitive session-init → tool-call → extract-text → warn-on-error
+     * pattern shared by Async Profiler and Quarkus collectors. Each call gets its own MCP
+     * session; a failure returns {@code null} without affecting sibling tool calls.
+     *
+     * @param endpoint   full MCP endpoint URL (base + /mcp)
+     * @param timeoutMs  HTTP timeout in milliseconds
+     * @param toolName   MCP tool name to invoke
+     * @param podName    pod_name argument value
+     * @param alert      originating alert (used only for log fields)
+     * @param successMsg info log message to emit on success
+     * @return extracted text result, or {@code null} on any failure
+     */
+    private String callMcpToolSafe(String endpoint, int timeoutMs, String toolName,
+                                    String podName, Alert alert, String successMsg) {
+        try {
+            String sessionId = initializeMcpSession(endpoint, timeoutMs);
+            ObjectNode arguments = objectMapper.createObjectNode();
+            arguments.put(McpConstants.Arguments.POD_NAME, podName);
+            JsonNode result = callMcpTool(endpoint, sessionId, toolName, arguments, timeoutMs);
+            String text = extractTextFromContent(result);
+            log.info(successMsg)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .log();
+            return text;
+        } catch (Exception e) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, toolName)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
+            return null;
         }
     }
 
