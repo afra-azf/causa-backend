@@ -3,6 +3,7 @@ package com.causa.config;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+import java.util.Optional;
 
 /**
  * MCP Configuration
@@ -46,6 +47,14 @@ public interface McpConfig {
      */
     @WithName("filesystem")
     FilesystemConfig filesystem();
+
+    /**
+     * Quarkus MCP server configuration (cluster platform).
+     *
+     * @return the Quarkus MCP config
+     */
+    @WithName("quarkus")
+    QuarkusConfig quarkus();
 
     /**
      * JMX MCP server configuration (VM platform).
@@ -224,6 +233,51 @@ public interface McpConfig {
         @WithName("alert-window-minutes")
         @WithDefault("5")
         int alertWindowMinutes();
+
+    }
+
+    /**
+     * Quarkus MCP Configuration (cluster platform)
+     */
+    interface QuarkusConfig {
+        /**
+         * Quarkus MCP server endpoint URL.
+         * Uses {@code Optional<String>} with an empty default so that a blank
+         * {@code CAUSA_MCP_QUARKUS_ENDPOINT} resolves to {@code Optional.empty()}
+         * instead of triggering SRCFG00040 at boot time.
+         *
+         * @return the endpoint URL, or empty when not configured
+         */
+        @WithName("endpoint")
+        @WithDefault("")
+        Optional<String> endpoint();
+
+        /**
+         * Health check path for the Quarkus MCP server.
+         *
+         * @return the health check path
+         */
+        @WithName("health-path")
+        @WithDefault("/healthz")
+        String healthPath();
+
+        /**
+         * HTTP request timeout in milliseconds.
+         *
+         * @return the timeout in ms
+         */
+        @WithName("timeout-ms")
+        @WithDefault("10000")
+        int timeoutMs();
+
+        /**
+         * When set, passed as {@code baseUrl} to {@code fetch_raw_metrics_from_endpoint}.
+         *
+         * @return the app base URL, or empty string if not configured
+         */
+        @WithName("metrics-base-url")
+        @WithDefault("")
+        Optional<String> metricsBaseUrl();
 
     }
 

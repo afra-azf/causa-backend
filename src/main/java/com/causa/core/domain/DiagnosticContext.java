@@ -44,6 +44,9 @@ public final class DiagnosticContext {
     private final String exceptionAnalysis;
     private final String containerAnalysis;
 
+    // Quarkus MCP context (cluster)
+    private final String quarkusRawMetrics;
+
     // VM — Filesystem MCP
     private final String libertyLogs;
 
@@ -73,6 +76,7 @@ public final class DiagnosticContext {
         this.threadAnalysis = builder.threadAnalysis;
         this.exceptionAnalysis = builder.exceptionAnalysis;
         this.containerAnalysis = builder.containerAnalysis;
+        this.quarkusRawMetrics = builder.quarkusRawMetrics;
         this.libertyLogs = builder.libertyLogs;
         this.heapStatus = builder.heapStatus;
         this.gcActivity = builder.gcActivity;
@@ -149,6 +153,10 @@ public final class DiagnosticContext {
         return containerAnalysis;
     }
 
+    public String getQuarkusRawMetrics() {
+        return quarkusRawMetrics;
+    }
+
     public String getHeapStatus() {
         return heapStatus;
     }
@@ -213,6 +221,15 @@ public final class DiagnosticContext {
     }
 
     /**
+     * Checks if any Quarkus MCP context was collected.
+     *
+     * @return true if a metrics snapshot is present
+     */
+    public boolean hasQuarkusContext() {
+        return isNotBlank(quarkusRawMetrics);
+    }
+
+    /**
      * Checks if any Filesystem MCP context was collected.
      *
      *  @return true if liberty logs are present
@@ -243,6 +260,7 @@ public final class DiagnosticContext {
      */
     public boolean hasAnyContext() {
         return hasKubernetesContext() || hasKruizeContext() || hasCryostatContext()
+            || hasQuarkusContext()
             || hasFilesystemContext() || hasJmxContext();
     }
 
@@ -300,6 +318,9 @@ public final class DiagnosticContext {
         appendSection(sb, ContextConstants.SECTION_THREAD_ANALYSIS, threadAnalysis);
         appendSection(sb, ContextConstants.SECTION_EXCEPTION_ANALYSIS, exceptionAnalysis);
         appendSection(sb, ContextConstants.SECTION_CONTAINER_ANALYSIS, containerAnalysis);
+
+        // Quarkus context
+        appendSection(sb, ContextConstants.SECTION_QUARKUS_RAW_METRICS, quarkusRawMetrics);
     }
 
     private void appendVmSections(StringBuilder sb) {
@@ -371,6 +392,7 @@ public final class DiagnosticContext {
         private String threadAnalysis;
         private String exceptionAnalysis;
         private String containerAnalysis;
+        private String quarkusRawMetrics;
         private String libertyLogs;
         private String heapStatus;
         private String gcActivity;
@@ -459,6 +481,13 @@ public final class DiagnosticContext {
 
         public Builder containerAnalysis(String containerAnalysis) {
             this.containerAnalysis = containerAnalysis;
+            return this;
+        }
+
+        // Cluster — Quarkus MCP
+
+        public Builder quarkusRawMetrics(String quarkusRawMetrics) {
+            this.quarkusRawMetrics = quarkusRawMetrics;
             return this;
         }
 
