@@ -10,6 +10,7 @@ import com.causa.common.constants.LLMConstants;
 import com.causa.common.logging.CausaLogger;
 import com.causa.common.logging.LogMessages;
 import com.causa.config.AppConfig;
+import com.causa.config.McpConfig;
 import com.causa.core.domain.LLMRequest;
 import com.causa.core.domain.LLMResponse;
 import com.causa.core.ports.llm.PromptSender;
@@ -91,9 +92,7 @@ public class HealthCheckService {
             @ConfigProperty(name = "causa.mcp.filesystem.endpoint") String mcpFilesystemEndpoint,
             @ConfigProperty(name = "causa.mcp.filesystem.health-path") String mcpFilesystemHealthPath,
             @ConfigProperty(name = "causa.mcp.filesystem.timeout-ms") int mcpFilesystemTimeout,
-            @ConfigProperty(name = "causa.mcp.quarkus.endpoint") String mcpQuarkusEndpoint,
-            @ConfigProperty(name = "causa.mcp.quarkus.health-path") String mcpQuarkusHealthPath,
-            @ConfigProperty(name = "causa.mcp.quarkus.timeout-ms") int mcpQuarkusTimeout,
+            McpConfig mcpConfig,
             PromptSender llmPromptSender,
             AppConfig appConfig) {
         this.databaseConnectionService = databaseConnectionService;
@@ -112,9 +111,9 @@ public class HealthCheckService {
         this.mcpFilesystemEndpoint = mcpFilesystemEndpoint;
         this.mcpFilesystemHealthPath = mcpFilesystemHealthPath;
         this.mcpFilesystemTimeout = mcpFilesystemTimeout;
-        this.mcpQuarkusEndpoint = mcpQuarkusEndpoint;
-        this.mcpQuarkusHealthPath = mcpQuarkusHealthPath;
-        this.mcpQuarkusTimeout = mcpQuarkusTimeout;
+        this.mcpQuarkusEndpoint = mcpConfig.quarkus().endpoint().orElse("");
+        this.mcpQuarkusHealthPath = mcpConfig.quarkus().healthPath();
+        this.mcpQuarkusTimeout = mcpConfig.quarkus().timeoutMs();
         this.llmPromptSender = llmPromptSender;
         this.appConfig = appConfig;
     }
@@ -174,8 +173,11 @@ public class HealthCheckService {
             mcpCryostatHealth = checkMcpCryostatHealth();
             responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_CRYOSTAT, mcpCryostatHealth);
 
-            mcpQuarkusHealth = checkMcpQuarkusHealth();
-            responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_QUARKUS, mcpQuarkusHealth);
+            // Only check and report Quarkus MCP if endpoint is configured
+            if (!mcpQuarkusEndpoint.isBlank()) {
+                mcpQuarkusHealth = checkMcpQuarkusHealth();
+                responseBuilder.addComponent(HealthCheckConstants.ComponentNames.MCP_QUARKUS, mcpQuarkusHealth);
+            }
         }
 
         // Determine overall system status

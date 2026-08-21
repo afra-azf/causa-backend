@@ -1,11 +1,13 @@
 package com.causa.core.services;
 
+import java.util.Optional;
 import com.causa.api.dto.ComponentHealthDto;
 import com.causa.api.dto.HealthCheckResponseDto;
 import com.causa.common.constants.AppConstants;
 import com.causa.common.constants.HealthCheckConstants;
 import com.causa.config.AppConfig;
 import com.causa.config.LlmConfigSnapshot;
+import com.causa.config.McpConfig;
 import com.causa.core.domain.LLMRequest;
 import com.causa.core.domain.LLMResponse;
 import com.causa.core.ports.llm.PromptSender;
@@ -71,6 +73,12 @@ class HealthCheckServiceTest {
     @Mock
     private LlmConfigSnapshot llmConfigSnapshot;
 
+    @Mock
+    private McpConfig mcpConfig;
+
+    @Mock
+    private McpConfig.QuarkusConfig quarkusConfig;
+
     private HealthCheckService healthCheckService;
 
     private static final String APP_VERSION = "0.0.1-TEST";
@@ -86,6 +94,11 @@ class HealthCheckServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
+        when(quarkusConfig.endpoint()).thenReturn(Optional.of(MCP_DEAD_ENDPOINT));
+        when(quarkusConfig.healthPath()).thenReturn(MCP_HEALTH_PATH);
+        when(quarkusConfig.timeoutMs()).thenReturn(MCP_TIMEOUT_MS);
+
         healthCheckService = new HealthCheckService(
                 databaseConnectionService,
                 dataSource,
@@ -95,7 +108,7 @@ class HealthCheckServiceTest {
                 MCP_DEAD_ENDPOINT, MCP_HEALTH_PATH, MCP_TIMEOUT_MS,   // kruize
                 MCP_DEAD_ENDPOINT, MCP_HEALTH_PATH, MCP_TIMEOUT_MS,   // cryostat
                 MCP_DEAD_ENDPOINT, MCP_HEALTH_PATH, MCP_TIMEOUT_MS,   // filesystem
-                MCP_DEAD_ENDPOINT, MCP_HEALTH_PATH, MCP_TIMEOUT_MS,   // quarkus
+                mcpConfig,
                 llmPromptSender,
                 appConfig
         );
@@ -508,6 +521,11 @@ class HealthCheckServiceTest {
 
         @BeforeEach
         void setUpVm() {
+            when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
+            when(quarkusConfig.endpoint()).thenReturn(Optional.of(MCP_DEAD_ENDPOINT));
+            when(quarkusConfig.healthPath()).thenReturn(MCP_HEALTH_PATH);
+            when(quarkusConfig.timeoutMs()).thenReturn(MCP_TIMEOUT_MS);
+
             vmHealthService = new HealthCheckService(
                     databaseConnectionService,
                     dataSource,
@@ -517,7 +535,7 @@ class HealthCheckServiceTest {
                     MCP_DEAD_ENDPOINT, MCP_HEALTH_PATH, MCP_TIMEOUT_MS,
                     MCP_DEAD_ENDPOINT, MCP_HEALTH_PATH, MCP_TIMEOUT_MS,
                     MCP_DEAD_ENDPOINT, MCP_HEALTH_PATH, MCP_TIMEOUT_MS,
-                    MCP_DEAD_ENDPOINT, MCP_HEALTH_PATH, MCP_TIMEOUT_MS,   // quarkus
+                    mcpConfig,
                     llmPromptSender,
                     appConfig
             );

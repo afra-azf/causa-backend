@@ -1074,7 +1074,16 @@ public class McpContextCollector {
             return;
         }
 
-        String endpoint = mcpConfig.quarkus().endpoint() + McpConstants.Paths.MCP_ENDPOINT;
+        String quarkusBase = mcpConfig.quarkus().endpoint().orElse("");
+        if (quarkusBase.isBlank()) {
+            log.warn(LogMessages.Mcp.MCP_CALL_FAILED)
+                .field(McpConstants.LogFields.TOOL, McpConstants.Tools.QUARKUS_FETCH_RAW_METRICS)
+                .field(McpConstants.LogFields.ALERT_ID, alert.getAlertId())
+                .field(McpConstants.LogFields.ERROR, "CAUSA_MCP_QUARKUS_ENDPOINT not configured — skipping Quarkus metrics collection")
+                .log();
+            return;
+        }
+        String endpoint = quarkusBase + McpConstants.Paths.MCP_ENDPOINT;
         int timeout = mcpConfig.quarkus().timeoutMs();
 
         try {

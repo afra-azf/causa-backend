@@ -4,5 +4,4 @@ metadata:
   name: causa-config
 data:
   CAUSA_LOG_LEVEL: "DEBUG"
-  # Environment marker
   CLUSTER_TYPE: "kind"

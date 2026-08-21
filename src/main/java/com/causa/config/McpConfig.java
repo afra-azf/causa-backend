@@ -242,11 +242,15 @@ public interface McpConfig {
     interface QuarkusConfig {
         /**
          * Quarkus MCP server endpoint URL.
+         * Uses {@code Optional<String>} with an empty default so that a blank
+         * {@code CAUSA_MCP_QUARKUS_ENDPOINT} resolves to {@code Optional.empty()}
+         * instead of triggering SRCFG00040 at boot time.
          *
-         * @return the endpoint URL
+         * @return the endpoint URL, or empty when not configured
          */
         @WithName("endpoint")
-        String endpoint();
+        @WithDefault("")
+        Optional<String> endpoint();
 
         /**
          * Health check path for the Quarkus MCP server.

@@ -1,5 +1,6 @@
 package com.causa.mcp;
 
+import java.util.Optional;
 import com.causa.common.constants.AlertConstants.AlertSeverity;
 import com.causa.common.constants.AlertConstants.AlertStatus;
 import com.causa.config.McpConfig;
@@ -77,7 +78,7 @@ class McpContextCollectorTest {
             when(cryostatConfig.retryDelayMs()).thenReturn(1);
 
             when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
-            when(quarkusConfig.endpoint()).thenReturn("http://192.0.2.1");
+            when(quarkusConfig.endpoint()).thenReturn(Optional.of("http://192.0.2.1"));
             when(quarkusConfig.timeoutMs()).thenReturn(1);
 
             collector = new McpContextCollector(mcpConfig, libertyLogsContextCollector, "cluster");
@@ -246,7 +247,7 @@ class McpContextCollectorTest {
             when(cryostatConfig.retryDelayMs()).thenReturn(1);
 
             when(mcpConfig.quarkus()).thenReturn(quarkusConfig);
-            when(quarkusConfig.endpoint()).thenReturn("http://192.0.2.1");
+            when(quarkusConfig.endpoint()).thenReturn(Optional.of("http://192.0.2.1"));
             when(quarkusConfig.timeoutMs()).thenReturn(1);
 
             McpContextCollector c = new McpContextCollector(mcpConfig, libertyLogsContextCollector, null);
