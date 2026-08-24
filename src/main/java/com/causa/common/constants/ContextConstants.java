@@ -39,6 +39,7 @@ public final class ContextConstants {
     public static final String SECTION_THREAD_ANALYSIS = "THREAD ANALYSIS (Cryostat JFR)";
     public static final String SECTION_EXCEPTION_ANALYSIS = "EXCEPTION ANALYSIS (Cryostat JFR)";
     public static final String SECTION_CONTAINER_ANALYSIS = "CONTAINER RESOURCE ANALYSIS (Cryostat JFR)";
+    public static final String SECTION_QUARKUS_RAW_METRICS = "QUARKUS RAW METRICS (Quarkus MCP)";
     public static final String SECTION_LIBERTY_LOGS = "LIBERTY APPLICATION LOGS (Filesystem MCP)";
 
     // Quarkus MCP section headers
