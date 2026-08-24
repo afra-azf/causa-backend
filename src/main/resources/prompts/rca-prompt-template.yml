@@ -51,6 +51,20 @@ prompts:
       - Contains: Resource request/limit recommendations for CPU and memory
       - Shows: Current vs recommended values with deltas
 
+      ### 7. QUARKUS_RAW_METRICS (Quarkus MCP)
+      - Source: `fetch_raw_metrics_from_endpoint` tool — live Micrometer/Prometheus metrics scraped from the Quarkus pod
+      - Top-level fields: `source`, `base_url`, `timestamp`, `metric_count`, `metrics` (flat map of metric-name → value)
+      - Key metric families to reason about:
+        - `jvm_memory_used_bytes{area="heap",id="G1 Old Gen"}` — live old-gen heap consumption in bytes
+        - `jvm_memory_max_bytes{area="heap",id="G1 Old Gen"}` — maximum heap ceiling; compare with used to compute utilisation %
+        - `jvm_gc_overhead` — fraction of time spent in GC (0.0 = no GC pressure, >0.1 = significant pressure)
+        - `jvm_gc_live_data_size_bytes` — bytes of live data after last full GC
+        - `jvm_threads_live_threads` / `jvm_threads_states_threads{state=...}` — thread counts by state (blocked, runnable, waiting, timed-waiting)
+        - `process_cpu_usage` — process-level CPU utilisation (0.0–1.0)
+        - `system_cpu_usage` — host CPU utilisation; compare with process to assess contention
+        - `worker_pool_active` / `worker_pool_idle{pool_name="vert.x-worker-thread"}` — Vert.x worker thread pool saturation
+      - **Note**: If section is missing or `"No Data Available"`, note in `llm_notes` and omit Quarkus evidence from scoring.
+
       ## AVAILABLE CONTEXT DATA
 
       {{context}}
