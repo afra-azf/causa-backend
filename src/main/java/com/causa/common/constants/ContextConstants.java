@@ -42,9 +42,6 @@ public final class ContextConstants {
     public static final String SECTION_QUARKUS_RAW_METRICS = "QUARKUS RAW METRICS (Quarkus MCP)";
     public static final String SECTION_LIBERTY_LOGS = "LIBERTY APPLICATION LOGS (Filesystem MCP)";
 
-    // Quarkus MCP section headers
-    public static final String SECTION_QUARKUS_RAW_METRICS = "QUARKUS RAW METRICS (Quarkus MCP)";
-
     // Identity field labels
     public static final String LABEL_POD = "Pod";
     public static final String LABEL_CONTAINER = "Container";
