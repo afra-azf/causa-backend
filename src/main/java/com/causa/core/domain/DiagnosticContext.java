@@ -319,8 +319,10 @@ public final class DiagnosticContext {
         appendSection(sb, ContextConstants.SECTION_EXCEPTION_ANALYSIS, exceptionAnalysis);
         appendSection(sb, ContextConstants.SECTION_CONTAINER_ANALYSIS, containerAnalysis);
 
-        // Quarkus context
-        appendSection(sb, ContextConstants.SECTION_QUARKUS_RAW_METRICS, quarkusRawMetrics);
+        // Quarkus context — only append if data is present
+        if (isNotBlank(quarkusRawMetrics)) {
+            appendSection(sb, ContextConstants.SECTION_QUARKUS_RAW_METRICS, quarkusRawMetrics);
+        }
     }
 
     private void appendVmSections(StringBuilder sb) {

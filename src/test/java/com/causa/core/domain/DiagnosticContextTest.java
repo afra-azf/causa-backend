@@ -41,6 +41,20 @@ class DiagnosticContextTest {
         @Test void hasFilesystemContext_true()     { assertThat(vmCtx().hasFilesystemContext()).isTrue(); }
         @Test void hasJmxContext_true()            { assertThat(vmCtx().hasJmxContext()).isTrue(); }
         @Test void hasAnyContext_true()            { assertThat(clusterCtx().hasAnyContext()).isTrue(); }
+        @Test void hasAnyContext_true_whenOnlyQuarkusContextPresent() {
+            DiagnosticContext ctx = DiagnosticContext.builder()
+                .platform("cluster")
+                .workloadName("w")
+                .quarkusRawMetrics("{}")
+                .build();
+            assertThat(ctx.hasQuarkusContext()).isTrue();
+            assertThat(ctx.hasKubernetesContext()).isFalse();
+            assertThat(ctx.hasKruizeContext()).isFalse();
+            assertThat(ctx.hasCryostatContext()).isFalse();
+            assertThat(ctx.hasFilesystemContext()).isFalse();
+            assertThat(ctx.hasJmxContext()).isFalse();
+            assertThat(ctx.hasAnyContext()).isTrue();
+        }
         @Test void hasQuarkusContext_true() {
             assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w")
                 .quarkusRawMetrics("{\"metric_count\":132}").build().hasQuarkusContext()).isTrue();
