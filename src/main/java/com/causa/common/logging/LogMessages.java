@@ -132,9 +132,11 @@ public final class LogMessages {
         public static final String ALERT_PERSISTED = "Alert persisted to database";
 
         // Alerts API
-        public static final String ALERTS_GET_REQUEST   = "GET /api/v1/alerts request received";
-        public static final String ALERTS_GET_FOUND     = "Alert(s) retrieved successfully";
-        public static final String ALERTS_GET_NOT_FOUND = "Alert not found";
+        public static final String ALERTS_GET_REQUEST      = "GET /api/v1/alerts request received";
+        public static final String ALERTS_GET_FOUND        = "Alert(s) retrieved successfully";
+        public static final String ALERTS_GET_NOT_FOUND    = "Alert not found";
+        public static final String ALERTS_TRIGGER_REQUEST  = "POST /api/v1/alerts manual trigger request received";
+        public static final String ALERTS_TRIGGER_ACCEPTED = "Manual alert trigger accepted";
 
         // Exception messages
         public static final String ALERT_PERSIST_FAILED = "Failed to persist alert";
@@ -181,6 +183,7 @@ public final class LogMessages {
         public static final String DIAGNOSTIC_GET_REQUEST    = "GET /api/v1/diagnostics/{id} request received";
         public static final String DIAGNOSTIC_GET_FOUND      = "Diagnostic retrieved successfully";
         public static final String DIAGNOSTIC_GET_NOT_FOUND  = "Diagnostic not found";
+
     }
 
     /**
