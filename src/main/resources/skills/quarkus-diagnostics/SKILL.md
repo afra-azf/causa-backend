@@ -157,7 +157,7 @@ Unusual — the process is using a disproportionate share of total CPU. Combined
 
 ### 3. Inspect thread states
 - Non-zero `blocked` threads → lock contention → check Cryostat THREAD ANALYSIS for deadlocks
-- High `worker_pool_queue_size` → saturation → determine if cause is I/O latency, GC pauses, or CPU throttle
+- High `worker_pool_queue_size` → saturation → determine if the cause is I/O latency, GC pauses, or CPU throttling
 
 ### 4. Correlate with other signals
 - **POD EVENTS `OOMKilling`** + high old-gen utilisation → confirms OOM_KILLED
