@@ -242,11 +242,14 @@ public interface McpConfig {
     interface QuarkusConfig {
         /**
          * Quarkus MCP server endpoint URL.
-         * Uses {@code Optional<String>} with an empty default so that a blank
-         * {@code CAUSA_MCP_QUARKUS_ENDPOINT} resolves to {@code Optional.empty()}
-         * instead of triggering SRCFG00040 at boot time.
          *
-         * @return the endpoint URL, or empty when not configured
+         * <p>SmallRye Config maps an empty string value to {@code Optional.empty()},
+         * so {@code @WithDefault("")} here means the property is treated as absent
+         * (i.e. {@code Optional.empty()}) when {@code CAUSA_MCP_QUARKUS_ENDPOINT}
+         * is not set or is explicitly set to {@code ""}, without triggering
+         * SRCFG00040 at boot time.
+         *
+         * @return the endpoint URL, or {@code Optional.empty()} when not configured
          */
         @WithName("endpoint")
         @WithDefault("")
@@ -273,7 +276,11 @@ public interface McpConfig {
         /**
          * When set, passed as {@code baseUrl} to {@code fetch_raw_metrics_from_endpoint}.
          *
-         * @return the app base URL, or empty string if not configured
+         * <p>Same {@code @WithDefault("")} / {@code Optional<String>} convention as
+         * {@link #endpoint()}: an unset or blank property resolves to
+         * {@code Optional.empty()}.
+         *
+         * @return the app base URL, or {@code Optional.empty()} if not configured
          */
         @WithName("metrics-base-url")
         @WithDefault("")
