@@ -89,7 +89,9 @@ prompts:
       - UNSUPPORTED: Evidence contradicts the claim
       - UNKNOWN: Insufficient evidence to validate
 
-      Return JSON:
+      IMPORTANT: Respond with ONLY a JSON object, no explanatory text before or after.
+
+      JSON format:
       {
         "status": "SUPPORTED|PARTIALLY_SUPPORTED|UNSUPPORTED|UNKNOWN",
         "confidence": 0.0-1.0,
@@ -131,4 +133,4 @@ prompts:
       1. Ask targeted questions about this {{assertion_type}} assertion
       2. Search the context for evidence
       3. Evaluate evidence quality and relevance
-      4. Return JSON with status, confidence, evidence, and reasoning
+      4. Return ONLY a JSON object with status, confidence, evidence, and reasoning. No text before or after the JSON.

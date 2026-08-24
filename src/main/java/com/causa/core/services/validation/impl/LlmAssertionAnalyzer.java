@@ -3,7 +3,9 @@ package com.causa.core.services.validation.impl;
 import com.causa.common.constants.JsonParsingConstants;
 import com.causa.common.constants.LLMConstants;
 import com.causa.common.constants.PromptConstants;
+import com.causa.common.constants.ValidationConstants;
 import com.causa.common.logging.CausaLogger;
+import com.causa.common.logging.LogMessages;
 import com.causa.config.AppConfig;
 import com.causa.config.LLMConfig;
 import com.causa.core.domain.LLMRequest;
@@ -15,13 +17,19 @@ import com.causa.core.ports.llm.PromptSender;
 import com.causa.core.services.PromptTemplateLoader;
 import com.causa.core.services.validation.AssertionAnalyzer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import io.quarkus.arc.properties.IfBuildProperty;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 
 /**
@@ -49,17 +57,34 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
     private final ObjectMapper objectMapper;
     private final PromptTemplateLoader promptTemplateLoader;
     private final String provider;
+    private final ExecutorService executorService;
 
     @Inject
     public LlmAssertionAnalyzer(
         PromptSender promptSender,
         AppConfig appConfig,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        @ConfigProperty(name = "causa.validation.assertion-analyzer.parallel-threads")
+        int parallelThreads
     ) {
         this.promptSender = promptSender;
         this.objectMapper = objectMapper;
         this.promptTemplateLoader = new PromptTemplateLoader(PromptConstants.TEMPLATE_PATH_ASSERTION_ANALYSIS);
         this.provider = determineProvider(appConfig.getLlmConfig());
+        this.executorService = Executors.newFixedThreadPool(parallelThreads);
+    }
+
+    @PreDestroy
+    void shutdown() {
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -92,7 +117,7 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
 
     @Override
     public ValidationResult analyze(Assertion assertion, String diagnosticContext) {
-        log.debug("Analyzing assertion with LLM")
+        log.debug(LogMessages.Validation.ASSERTION_ANALYZING)
             .field("assertionId", assertion.id())
             .field("assertionType", assertion.type())
             .field("assertionText", assertion.text())
@@ -102,7 +127,7 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
         if (assertion.type() == Assertion.AssertionType.RECOMMENDATION) {
             return ValidationResult.unknown(
                 assertion,
-                "Recommendations are not validated against evidence"
+                LogMessages.Validation.ASSERTION_SKIP_RECOMMENDATION
             );
         }
 
@@ -132,7 +157,7 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
             // Convert to ValidationResult
             ValidationResult validationResult = toValidationResult(assertion, result);
 
-            log.info("LLM assertion analysis completed")
+            log.info(LogMessages.Validation.ASSERTION_ANALYSIS_COMPLETED)
                 .field("assertionId", assertion.id())
                 .field("status", validationResult.status())
                 .field("confidence", validationResult.confidence())
@@ -142,7 +167,7 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
             return validationResult;
 
         } catch (Exception e) {
-            log.error("LLM assertion analysis failed")
+            log.error(LogMessages.Validation.ASSERTION_ANALYSIS_FAILED)
                 .field("assertionId", assertion.id())
                 .exception(e)
                 .log();
@@ -160,18 +185,20 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
         List<Assertion> assertions,
         String diagnosticContext
     ) {
-        log.info("Analyzing all assertions with LLM")
+        log.info(LogMessages.Validation.ASSERTION_BATCH_START)
             .field("totalAssertions", assertions.size())
             .log();
 
-        List<ValidationResult> results = new ArrayList<>();
+        List<CompletableFuture<ValidationResult>> futures = assertions.stream()
+            .map(assertion -> CompletableFuture.supplyAsync(
+                () -> analyze(assertion, diagnosticContext), executorService))
+            .toList();
 
-        for (Assertion assertion : assertions) {
-            ValidationResult result = analyze(assertion, diagnosticContext);
-            results.add(result);
-        }
+        List<ValidationResult> results = futures.stream()
+            .map(CompletableFuture::join)
+            .toList();
 
-        log.info("Batch analysis completed")
+        log.info(LogMessages.Validation.ASSERTION_BATCH_COMPLETED)
             .field("totalAssertions", assertions.size())
             .field("supported", results.stream().filter(r -> r.status() == ValidationResult.ValidationStatus.SUPPORTED).count())
             .field("unsupported", results.stream().filter(r -> r.status() == ValidationResult.ValidationStatus.UNSUPPORTED).count())
@@ -201,7 +228,7 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
     }
 
     /**
-     * Parses the LLM analysis response.
+     * Parses the LLM analysis response, extracting JSON even if surrounded by text.
      */
     private AnalysisResult parseAnalysisResponse(String responseText) throws Exception {
         // Extract the outermost JSON object from the response.
@@ -211,7 +238,7 @@ public class LlmAssertionAnalyzer implements AssertionAnalyzer {
         //   3. trailing text after the last '}' (closing fence, prose) — excluded by greedy .*}
         Matcher jsonMatcher = JsonParsingConstants.JSON_OBJECT_PATTERN.matcher(responseText);
         if (!jsonMatcher.find()) {
-            throw new IllegalArgumentException("No JSON object found in LLM response");
+            throw new IllegalArgumentException(LogMessages.Validation.ASSERTION_NO_JSON);
         }
         return objectMapper.readValue(jsonMatcher.group(1), AnalysisResult.class);
     }

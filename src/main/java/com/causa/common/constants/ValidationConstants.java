@@ -68,6 +68,15 @@ public final class ValidationConstants {
     }
 
     /**
+     * Assertion analysis configuration
+     */
+    public static final class AssertionAnalysis {
+        private AssertionAnalysis() {}
+
+        public static final int MAX_ASSERTIONS_PER_VALIDATION = 15;
+    }
+
+    /**
      * Validation log field names
      */
     public static final class LogFields {

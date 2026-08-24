@@ -1,5 +1,6 @@
 package com.causa.core.services.validation.impl;
 
+import com.causa.common.constants.ValidationConstants;
 import com.causa.common.logging.CausaLogger;
 import com.causa.core.domain.RootCauseAnalysis;
 import com.causa.core.domain.validation.*;
@@ -123,10 +124,13 @@ public class RcaValidatorImpl implements RcaValidator {
         log.info("PATH A: Starting assertion-based validation")
             .log();
 
-        // Step 1: Extract assertions from RCA
-        List<Assertion> assertions = assertionExtractor.extractAssertions(rca);
+        // Step 1: Extract assertions from RCA (capped at 15 to control cost/latency)
+        List<Assertion> allAssertions = assertionExtractor.extractAssertions(rca);
+        List<Assertion> assertions = allAssertions.size() > ValidationConstants.AssertionAnalysis.MAX_ASSERTIONS_PER_VALIDATION
+            ? allAssertions.subList(0, ValidationConstants.AssertionAnalysis.MAX_ASSERTIONS_PER_VALIDATION)
+            : allAssertions;
 
-        log.info("✅ Assertions extracted: " + assertions.size())
+        log.info("✅ Assertions extracted: " + allAssertions.size() + " (using " + assertions.size() + ")")
             .log();
 
         // Log each assertion with full details
