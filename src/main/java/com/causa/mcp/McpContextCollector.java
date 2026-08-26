@@ -158,7 +158,7 @@ public class McpContextCollector {
             .field(McpConstants.LogFields.HAS_KRUIZE_CONTEXT, context.hasKruizeContext())
             .field(McpConstants.LogFields.HAS_CRYOSTAT_CONTEXT, context.hasCryostatContext())
             .field(McpConstants.LogFields.HAS_QUARKUS_CONTEXT, context.hasQuarkusContext())
-            .field("hasAsyncProfilerContext", context.hasAsyncProfilerContext())
+            .field(McpConstants.LogFields.HAS_ASYNC_PROFILER_CONTEXT, context.hasAsyncProfilerContext())
             .log();
 
         return context;
@@ -1459,8 +1459,9 @@ public class McpContextCollector {
      */
     private String callAsyncProfilerTool(String endpoint, int timeoutMs,
             String toolName, ObjectNode arguments, Alert alert) {
+        String sessionId = null;
         try {
-            String sessionId = initializeMcpSession(endpoint, timeoutMs);
+            sessionId = initializeMcpSession(endpoint, timeoutMs);
             JsonNode result = callMcpTool(endpoint, sessionId, toolName, arguments, timeoutMs);
             return extractTextFromContent(result);
         } catch (Exception e) {
@@ -1470,6 +1471,35 @@ public class McpContextCollector {
                 .field(McpConstants.LogFields.ERROR, e.getMessage())
                 .log();
             return null;
+        } finally {
+            if (sessionId != null) {
+                terminateMcpSession(endpoint, sessionId, timeoutMs);
+            }
+        }
+    }
+
+    /**
+     * Terminates an MCP session by sending an HTTP DELETE to the endpoint
+     * with the session ID header, as required by the MCP protocol.
+     *
+     * @param endpoint  the MCP server endpoint URL
+     * @param sessionId the session ID to terminate
+     * @param timeoutMs request timeout in milliseconds
+     */
+    protected void terminateMcpSession(String endpoint, String sessionId, int timeoutMs) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header(McpConstants.Headers.MCP_SESSION_ID, sessionId)
+                .DELETE()
+                .timeout(Duration.ofMillis(timeoutMs))
+                .build();
+            httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+        } catch (Exception e) {
+            log.warn("Failed to terminate MCP session")
+                .field(McpConstants.LogFields.SESSION_ID, sessionId)
+                .field(McpConstants.LogFields.ERROR, e.getMessage())
+                .log();
         }
     }
 
