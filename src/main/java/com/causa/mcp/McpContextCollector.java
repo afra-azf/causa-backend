@@ -1463,7 +1463,7 @@ public class McpContextCollector {
             String toolName, ObjectNode arguments, Alert alert) {
         String sessionId = null;
         try {
-            String sessionId = initializeMcpSession(endpoint, timeoutMs);
+            sessionId = initializeMcpSession(endpoint, timeoutMs);
             JsonNode result = callMcpTool(endpoint, sessionId, toolName, arguments, timeoutMs);
             return extractTextFromContent(result);
         } catch (Exception e) {

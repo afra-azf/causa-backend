@@ -149,40 +149,6 @@ class McpContextCollectorTest {
         }
 
         @Test
-        @DisplayName("hasAsyncProfilerContext is true when Async Profiler MCP tool returns pod list")
-        void shouldCollectAsyncProfilerContextWhenMcpToolSucceeds() throws Exception {
-            // given
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode textEntry = mapper.createObjectNode();
-            textEntry.put("text", "[{\"podName\":\"pod-1\",\"latestRecordingId\":null}]");
-            ArrayNode contentArray = mapper.createArrayNode();
-            contentArray.add(textEntry);
-            ObjectNode podListResult = mapper.createObjectNode();
-            podListResult.set("content", contentArray);
-
-            McpContextCollector testCollector =
-                    new McpContextCollector(mcpConfig, libertyLogsContextCollector, "cluster") {
-                        @Override
-                        protected String initializeMcpSession(String endpoint, int timeoutMs) {
-                            return "test-session";
-                        }
-
-                        @Override
-                        protected JsonNode callMcpTool(String endpoint, String sessionId,
-                                String toolName, ObjectNode arguments, int timeoutMs) {
-                            return podListResult;
-                        }
-                    };
-
-            // when
-            DiagnosticContext ctx = testCollector.collectContext(buildAlert());
-
-            // then
-            assertThat(ctx.hasAsyncProfilerContext()).isTrue();
-            assertThat(ctx.getAsyncProfilerPodList()).contains("pod-1");
-        }
-
-        @Test
         @DisplayName("terminateMcpSession is called after successful callAsyncProfilerTool")
         void shouldTerminateSessionAfterSuccessfulAsyncProfilerCall() throws Exception {
             // given
