@@ -276,7 +276,14 @@ public final class DiagnosticContext {
     /**
      * Checks if any Async Profiler MCP context was collected.
      *
-     * @return true if any profiler field is present
+     * <p>The administrative {@code asyncProfilerRecording} field is intentionally
+     * excluded from this signal gate — it contains only recording metadata
+     * (state, startTime, duration, sizeBytes) with no diagnostic signal value.
+     * Including it would allow metadata-only responses to trigger a full LLM call
+     * via {@link #hasAnyContext()}.
+     *
+     * @return true if any profiler field other than the administrative
+     *     {@code asyncProfilerRecording} field is present
      */
     public boolean hasAsyncProfilerContext() {
         return isNotBlank(asyncProfilerPodList)
