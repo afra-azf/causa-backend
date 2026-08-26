@@ -79,6 +79,9 @@ class HealthCheckServiceTest {
     @Mock
     private McpConfig.QuarkusConfig quarkusConfig;
 
+    @Mock
+    private McpConfig.AsyncProfilerConfig asyncProfilerConfig;
+
     private HealthCheckService healthCheckService;
 
     private static final String APP_VERSION = "0.0.1-TEST";
@@ -98,6 +101,11 @@ class HealthCheckServiceTest {
         when(quarkusConfig.endpoint()).thenReturn(Optional.of(MCP_DEAD_ENDPOINT));
         when(quarkusConfig.healthPath()).thenReturn(MCP_HEALTH_PATH);
         when(quarkusConfig.timeoutMs()).thenReturn(MCP_TIMEOUT_MS);
+
+        when(mcpConfig.asyncProfiler()).thenReturn(asyncProfilerConfig);
+        when(asyncProfilerConfig.endpoint()).thenReturn(Optional.of(MCP_DEAD_ENDPOINT));
+        when(asyncProfilerConfig.healthPath()).thenReturn(MCP_HEALTH_PATH);
+        when(asyncProfilerConfig.timeoutMs()).thenReturn(MCP_TIMEOUT_MS);
 
         healthCheckService = new HealthCheckService(
                 databaseConnectionService,
@@ -510,6 +518,52 @@ class HealthCheckServiceTest {
     }
 
     // -------------------------------------------------------------------------
+    // Async Profiler MCP health — cluster mode
+    // -------------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("Async Profiler MCP Health Tests (cluster mode)")
+    class AsyncProfilerHealthTests {
+
+        @Test
+        @DisplayName("Cluster mode — mcp_async_profiler component present and DOWN (no real HTTP)")
+        void clusterModeIncludesAsyncProfilerComponent() {
+            when(databaseConnectionService.isReady()).thenReturn(false);
+            when(llmPromptSender.isReady()).thenReturn(false);
+
+            HealthCheckResponseDto response = healthCheckService.getSystemHealth();
+
+            ComponentHealthDto asyncProfiler = response.getComponents()
+                    .get(HealthCheckConstants.ComponentNames.MCP_ASYNC_PROFILER);
+            assertNotNull(asyncProfiler, "mcp_async_profiler component must be present in cluster mode when endpoint is configured");
+            assertEquals(AppConstants.HealthStatus.DOWN.getValue(), asyncProfiler.getStatus());
+            assertNotNull(asyncProfiler.getLatencyMs());
+        }
+
+        @Test
+        @DisplayName("DEGRADED — database UP, LLM UP, async profiler DOWN")
+        void degradedWhenDbAndLlmUpButAsyncProfilerDown() throws Exception {
+            // DB UP
+            when(databaseConnectionService.isReady()).thenReturn(true);
+            when(dataSource.getConnection()).thenReturn(connection);
+            when(connection.createStatement()).thenReturn(statement);
+            when(statement.execute("SELECT 1")).thenReturn(true);
+            // LLM UP
+            when(llmPromptSender.isReady()).thenReturn(true);
+            when(appConfig.getLlmConfig()).thenReturn(llmConfigSnapshot);
+            when(llmConfigSnapshot.getProvider()).thenReturn("bob");
+            when(llmConfigSnapshot.getModelName()).thenReturn("bob");
+            when(llmPromptSender.send(any(LLMRequest.class)))
+                    .thenReturn(new LLMResponse("OK", "bob", 1L, 1L, 0L, 0L, 10L));
+            // async profiler → DOWN (192.0.2.1 + 1ms timeout)
+
+            assertEquals(AppConstants.HealthStatus.DEGRADED.getValue(),
+                    healthCheckService.getSystemHealth().getStatus(),
+                    "System must be DEGRADED (not DOWN) when only non-critical MCPs are down");
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // VM platform mode — filesystem MCP only
     // -------------------------------------------------------------------------
 
@@ -525,6 +579,11 @@ class HealthCheckServiceTest {
             when(quarkusConfig.endpoint()).thenReturn(Optional.of(MCP_DEAD_ENDPOINT));
             when(quarkusConfig.healthPath()).thenReturn(MCP_HEALTH_PATH);
             when(quarkusConfig.timeoutMs()).thenReturn(MCP_TIMEOUT_MS);
+
+            when(mcpConfig.asyncProfiler()).thenReturn(asyncProfilerConfig);
+            when(asyncProfilerConfig.endpoint()).thenReturn(Optional.of(MCP_DEAD_ENDPOINT));
+            when(asyncProfilerConfig.healthPath()).thenReturn(MCP_HEALTH_PATH);
+            when(asyncProfilerConfig.timeoutMs()).thenReturn(MCP_TIMEOUT_MS);
 
             vmHealthService = new HealthCheckService(
                     databaseConnectionService,

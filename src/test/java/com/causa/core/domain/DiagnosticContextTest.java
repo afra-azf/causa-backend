@@ -63,6 +63,39 @@ class DiagnosticContextTest {
             assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w").build()
                 .hasQuarkusContext()).isFalse();
         }
+        @Test void hasAsyncProfilerContext_true_whenPodListPresent() {
+            DiagnosticContext ctx = DiagnosticContext.builder()
+                .platform("cluster").workloadName("w")
+                .asyncProfilerPodList("[{\"podName\":\"pod-1\"}]")
+                .build();
+            assertThat(ctx.hasAsyncProfilerContext()).isTrue();
+            assertThat(ctx.hasAnyContext()).isTrue();
+        }
+        @Test void hasAsyncProfilerContext_true_whenJfrSummaryPresent() {
+            DiagnosticContext ctx = DiagnosticContext.builder()
+                .platform("cluster").workloadName("w")
+                .asyncProfilerJfrSummary("heap usage 80%")
+                .build();
+            assertThat(ctx.hasAsyncProfilerContext()).isTrue();
+        }
+        @Test void hasAsyncProfilerContext_false_whenNoAsyncProfilerFields() {
+            assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w").build()
+                .hasAsyncProfilerContext()).isFalse();
+        }
+        @Test void hasAnyContext_true_whenOnlyAsyncProfilerContextPresent() {
+            DiagnosticContext ctx = DiagnosticContext.builder()
+                .platform("cluster").workloadName("w")
+                .asyncProfilerReport("JMC rule: heap high")
+                .build();
+            assertThat(ctx.hasAsyncProfilerContext()).isTrue();
+            assertThat(ctx.hasKubernetesContext()).isFalse();
+            assertThat(ctx.hasKruizeContext()).isFalse();
+            assertThat(ctx.hasCryostatContext()).isFalse();
+            assertThat(ctx.hasQuarkusContext()).isFalse();
+            assertThat(ctx.hasFilesystemContext()).isFalse();
+            assertThat(ctx.hasJmxContext()).isFalse();
+            assertThat(ctx.hasAnyContext()).isTrue();
+        }
         @Test void hasKubernetesContext_false() {
             assertThat(DiagnosticContext.builder().platform("cluster").workloadName("w").build()
                 .hasKubernetesContext()).isFalse();
