@@ -74,3 +74,9 @@ data:
   CAUSA_MCP_QUARKUS_HEALTH_PATH: "/healthz"
   CAUSA_MCP_QUARKUS_TIMEOUT: "10000"
   CAUSA_MCP_QUARKUS_METRICS_BASE_URL: ""
+
+  # MCP Async Profiler Configuration (JVM profiling — CPU hotspots, flame graphs, JFR analysis)
+  # Set CAUSA_MCP_ASYNC_PROFILER_ENDPOINT to enable — leave blank to disable
+  CAUSA_MCP_ASYNC_PROFILER_ENDPOINT: ""
+  CAUSA_MCP_ASYNC_PROFILER_HEALTH_PATH: "/healthz"
+  CAUSA_MCP_ASYNC_PROFILER_TIMEOUT: "15000"
