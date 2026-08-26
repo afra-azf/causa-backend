@@ -83,6 +83,15 @@ public final class McpConstants {
         // Quarkus MCP tools
         public static final String QUARKUS_FETCH_RAW_METRICS = "fetch_raw_metrics_from_endpoint";
 
+        // Async Profiler MCP tools (read-only)
+        public static final String ASYNC_PROFILER_LIST_PODS        = "list_profiled_pods";
+        public static final String ASYNC_PROFILER_GET_JVM_STATUS   = "get_pod_jvm_status";
+        public static final String ASYNC_PROFILER_GET_JVM_STATS    = "get_jvm_statistics";
+        public static final String ASYNC_PROFILER_GET_RECORDING    = "get_recording";
+        public static final String ASYNC_PROFILER_GET_REPORT       = "get_recording_report";
+        public static final String ASYNC_PROFILER_GET_JFR_SUMMARY  = "get_jfr_summary";
+        public static final String ASYNC_PROFILER_GET_FLAME_GRAPH  = "get_flame_graph";
+
         // Cryostat MCP tools
         public static final String CRYOSTAT_GET_GC_ANALYSIS = "get_gc_analysis";
         public static final String CRYOSTAT_GET_MEMORY_ANALYSIS = "get_memory_analysis";
@@ -143,6 +152,16 @@ public final class McpConstants {
 
         // Quarkus MCP arguments
         public static final String BASE_URL = "baseUrl";
+
+        // Async Profiler MCP arguments
+        public static final String RECORDING_ID = "recording_id";
+        public static final String FORMAT        = "format";
+        public static final String FORMAT_JSON   = "json";
+        /** Argument key {@code pod} used by get_recording_report and get_jfr_summary. */
+        public static final String POD           = "pod";
+        /** Time-window shorthand e.g. {@code "5m"} used by get_recording_report and get_jfr_summary. */
+        public static final String LAST          = "last";
+        public static final String LAST_5M       = "5m";
 
         // Filesystem arguments
         public static final String PATH = "path";
