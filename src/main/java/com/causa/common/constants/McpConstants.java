@@ -316,6 +316,7 @@ public final class McpConstants {
         public static final String HAS_ASYNC_PROFILER_CONTEXT = "hasAsyncProfilerContext";
         public static final String HAS_FILESYSTEM_CONTEXT = "hasFilesystemContext";
         public static final String HAS_JMX_CONTEXT = "hasJmxContext";
+        public static final String HAS_ASYNC_PROFILER_CONTEXT = "hasAsyncProfilerContext";
         public static final String PLATFORM = "platform";
         public static final String RETRY_ATTEMPT = "retryAttempt";
         public static final String DELAY_MS = "delayMs";
