@@ -112,6 +112,9 @@ public final class LogMessages {
         public static final String MCP_QUARKUS_CHECK_STARTED = "MCP Quarkus health check started";
         public static final String MCP_QUARKUS_CHECK_PASSED = "MCP Quarkus health check passed";
         public static final String MCP_QUARKUS_CHECK_FAILED = "MCP Quarkus health check failed";
+        public static final String MCP_ASYNC_PROFILER_CHECK_STARTED = "MCP Async Profiler health check started";
+        public static final String MCP_ASYNC_PROFILER_CHECK_PASSED  = "MCP Async Profiler health check passed";
+        public static final String MCP_ASYNC_PROFILER_CHECK_FAILED  = "MCP Async Profiler health check failed";
         public static final String LLM_CHECK_STARTED = "LLM health check started";
         public static final String LLM_CHECK_PASSED = "LLM health check passed";
         public static final String LLM_CHECK_FAILED = "LLM health check failed";
@@ -210,6 +213,16 @@ public final class LogMessages {
 
         // Quarkus MCP
         public static final String MCP_QUARKUS_RAW_METRICS = "Quarkus raw metrics retrieved";
+
+        // Async Profiler MCP
+        public static final String MCP_ASYNC_PROFILER_POD_LIST     = "Async Profiler pod list retrieved";
+        public static final String MCP_ASYNC_PROFILER_JVM_STATUS   = "Async Profiler JVM status retrieved";
+        public static final String MCP_ASYNC_PROFILER_JVM_STATS    = "Async Profiler JVM statistics retrieved";
+        public static final String MCP_ASYNC_PROFILER_RECORDING    = "Async Profiler recording retrieved";
+        public static final String MCP_ASYNC_PROFILER_REPORT       = "Async Profiler recording report retrieved";
+        public static final String MCP_ASYNC_PROFILER_JFR_SUMMARY  = "Async Profiler JFR summary retrieved";
+        public static final String MCP_ASYNC_PROFILER_FLAME_GRAPH  = "Async Profiler flame graph retrieved";
+        public static final String MCP_ASYNC_PROFILER_NO_RECORDING = "Async Profiler: no latestRecordingId — skipping recording tools";
 
         // Cryostat MCP
         public static final String MCP_CRYOSTAT_GC_ANALYSIS = "Cryostat GC analysis retrieved";
