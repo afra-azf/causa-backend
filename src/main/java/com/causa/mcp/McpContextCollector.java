@@ -150,6 +150,8 @@ public class McpContextCollector {
             collectAsyncProfilerContext(contextBuilder, alert);
         }
 
+
+
         DiagnosticContext context = contextBuilder.build();
 
         log.info(LogMessages.Mcp.MCP_CONTEXT_COLLECTION_COMPLETE)
@@ -1461,7 +1463,7 @@ public class McpContextCollector {
             String toolName, ObjectNode arguments, Alert alert) {
         String sessionId = null;
         try {
-            sessionId = initializeMcpSession(endpoint, timeoutMs);
+            String sessionId = initializeMcpSession(endpoint, timeoutMs);
             JsonNode result = callMcpTool(endpoint, sessionId, toolName, arguments, timeoutMs);
             return extractTextFromContent(result);
         } catch (Exception e) {
