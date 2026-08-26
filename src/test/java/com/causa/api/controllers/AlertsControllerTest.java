@@ -6,6 +6,8 @@ import com.causa.api.dto.response.AlertResponse;
 import com.causa.common.constants.AlertConstants.AlertSeverity;
 import com.causa.common.constants.AlertConstants.AlertStatus;
 import com.causa.core.domain.Alert;
+import com.causa.core.domain.PageRequest;
+import com.causa.core.domain.PageResult;
 import com.causa.core.services.AlertService;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -141,59 +144,64 @@ class AlertsControllerTest {
         void shouldReturnAllAlertsWithNoFilters() {
             Alert a1 = buildAlert("a1");
             Alert a2 = buildAlert("a2");
-            when(alertService.getAlerts(null, null)).thenReturn(List.of(a1, a2));
+            PageResult<Alert> page = PageResult.of(List.of(a1, a2), 2L, PageRequest.of(1, 20));
+            when(alertService.listAlerts(any(), any())).thenReturn(page);
 
-            Response response = controller.getAlerts(null, null);
+            Response response = controller.getAlerts(null, null, 1, 20);
 
             assertEquals(200, response.getStatus());
             @SuppressWarnings("unchecked")
-            List<AlertResponse> body = (List<AlertResponse>) response.getEntity();
-            assertEquals(2, body.size());
+            PageResult<AlertResponse> body = (PageResult<AlertResponse>) response.getEntity();
+            assertEquals(2, body.items().size());
         }
 
         @Test
-        @DisplayName("Should return 200 with empty list when no alerts found")
+        @DisplayName("Should return 200 with empty page when no alerts found")
         void shouldReturnEmptyListWhenNoAlertsFound() {
-            when(alertService.getAlerts(null, null)).thenReturn(List.of());
+            PageResult<Alert> page = PageResult.of(List.of(), 0L, PageRequest.of(1, 20));
+            when(alertService.listAlerts(any(), any())).thenReturn(page);
 
-            Response response = controller.getAlerts(null, null);
+            Response response = controller.getAlerts(null, null, 1, 20);
 
             assertEquals(200, response.getStatus());
             @SuppressWarnings("unchecked")
-            List<AlertResponse> body = (List<AlertResponse>) response.getEntity();
-            assertTrue(body.isEmpty());
+            PageResult<AlertResponse> body = (PageResult<AlertResponse>) response.getEntity();
+            assertTrue(body.items().isEmpty());
         }
 
         @Test
         @DisplayName("Should delegate workload_name filter to service")
         void shouldDelegateWorkloadNameFilter() {
-            when(alertService.getAlerts("my-app", null)).thenReturn(List.of());
+            PageResult<Alert> page = PageResult.of(List.of(), 0L, PageRequest.of(1, 20));
+            when(alertService.listAlerts(any(), any())).thenReturn(page);
 
-            controller.getAlerts("my-app", null);
+            controller.getAlerts("my-app", null, 1, 20);
 
-            verify(alertService).getAlerts("my-app", null);
+            verify(alertService).listAlerts(any(), any());
         }
 
         @Test
         @DisplayName("Should delegate namespace filter to service")
         void shouldDelegateNamespaceFilter() {
-            when(alertService.getAlerts(null, "production")).thenReturn(List.of());
+            PageResult<Alert> page = PageResult.of(List.of(), 0L, PageRequest.of(1, 20));
+            when(alertService.listAlerts(any(), any())).thenReturn(page);
 
-            controller.getAlerts(null, "production");
+            controller.getAlerts(null, "production", 1, 20);
 
-            verify(alertService).getAlerts(null, "production");
+            verify(alertService).listAlerts(any(), any());
         }
 
         @Test
         @DisplayName("Should apply both filters when both are provided")
         void shouldApplyBothFilters() {
             Alert a = buildAlert("a1");
-            when(alertService.getAlerts("my-app", "production")).thenReturn(List.of(a));
+            PageResult<Alert> page = PageResult.of(List.of(a), 1L, PageRequest.of(1, 20));
+            when(alertService.listAlerts(any(), any())).thenReturn(page);
 
-            Response response = controller.getAlerts("my-app", "production");
+            Response response = controller.getAlerts("my-app", "production", 1, 20);
 
             assertEquals(200, response.getStatus());
-            verify(alertService).getAlerts("my-app", "production");
+            verify(alertService).listAlerts(any(), any());
         }
     }
 
