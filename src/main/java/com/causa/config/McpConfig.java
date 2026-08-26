@@ -57,6 +57,14 @@ public interface McpConfig {
     QuarkusConfig quarkus();
 
     /**
+     * Async Profiler MCP server configuration (cluster platform).
+     *
+     * @return the Async Profiler MCP config
+     */
+    @WithName("async-profiler")
+    AsyncProfilerConfig asyncProfiler();
+
+    /**
      * JMX MCP server configuration (VM platform).
      *
      * @return the JMX MCP config
@@ -286,6 +294,42 @@ public interface McpConfig {
         @WithDefault("")
         Optional<String> metricsBaseUrl();
 
+    }
+
+    /**
+     * Async Profiler MCP Configuration (cluster platform)
+     */
+    interface AsyncProfilerConfig {
+        /**
+         * Async Profiler MCP server endpoint URL.
+         *
+         * <p>Same {@code @WithDefault("")} / {@code Optional<String>} opt-in convention
+         * as {@link QuarkusConfig#endpoint()}: blank or unset resolves to
+         * {@code Optional.empty()}, disabling the integration without triggering SRCFG00040.
+         *
+         * @return the endpoint URL, or {@code Optional.empty()} when not configured
+         */
+        @WithName("endpoint")
+        @WithDefault("")
+        Optional<String> endpoint();
+
+        /**
+         * Health check path for the Async Profiler MCP server.
+         *
+         * @return the health check path
+         */
+        @WithName("health-path")
+        @WithDefault("/healthz")
+        String healthPath();
+
+        /**
+         * HTTP request timeout in milliseconds.
+         *
+         * @return the timeout in ms
+         */
+        @WithName("timeout-ms")
+        @WithDefault("15000")
+        int timeoutMs();
     }
 
     /**

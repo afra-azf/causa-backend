@@ -167,6 +167,10 @@ causa:
       health-path: ${CAUSA_MCP_QUARKUS_HEALTH_PATH:/healthz}
       timeout-ms: ${CAUSA_MCP_QUARKUS_TIMEOUT:10000}
       metrics-base-url: ${CAUSA_MCP_QUARKUS_METRICS_BASE_URL:}
+    async-profiler:
+      endpoint: ${CAUSA_MCP_ASYNC_PROFILER_ENDPOINT:}
+      health-path: ${CAUSA_MCP_ASYNC_PROFILER_HEALTH_PATH:/healthz}
+      timeout-ms: ${CAUSA_MCP_ASYNC_PROFILER_TIMEOUT:15000}
     jmx:
       endpoint: ${CAUSA_MCP_JMX_ENDPOINT:http://jmx-mcp-server:8080}
       health-path: ${CAUSA_MCP_JMX_HEALTH_PATH:/healthz}
